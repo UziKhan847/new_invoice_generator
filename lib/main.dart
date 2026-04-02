@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/keys.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/app_shell.dart';
 import 'package:new_invoice_generator/screens/auth/login.dart';
@@ -9,8 +10,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
-    url: 'https://htvfunmvfuawdordgdtk.supabase.co',
-    anonKey: 'sb_publishable_mDj1fUAoPgQ-k5fKCWb6jQ_DrT1oXWi',
+    url: url,
+    anonKey: anonKey,
   );
   runApp(const ProviderScope(child: MyApp()));
 }
