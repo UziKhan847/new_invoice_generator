@@ -59,7 +59,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (analytics) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: [
                   // Stat cards row
                   _StatRow(analytics: analytics),
@@ -67,7 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // Chart selector tabs
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const .symmetric(horizontal: 16),
                     child: SegmentedButton<int>(
                       segments: const [
                         ButtonSegment(value: 0, label: Text('Revenue')),
@@ -83,10 +83,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // Chart
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const .symmetric(horizontal: 16),
                     child: Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const .all(16),
                         child: SizedBox(
                           height: 200,
                           child: _chartIndex == 0
@@ -112,14 +112,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // ── Recent Invoices header ────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const .fromLTRB(16, 0, 16, 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: .spaceBetween,
                 children: [
                   Text(
                     'This Month\'s Invoices',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: .bold,
                     ),
                   ),
                 ],
@@ -149,7 +149,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (thisMonth.isEmpty) {
                 return const SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: .all(32),
                     child: Center(child: Text('No invoices this month yet')),
                   ),
                 );
@@ -164,7 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         return null;
                       }
                       return Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const .all(16),
                         child: OutlinedButton(
                           onPressed: () => setState(() => _invoiceLimit += 5),
                           child: const Text('Load More'),
@@ -173,10 +173,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     }
                     final inv = showing[i];
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
+                      padding: const .symmetric(horizontal: 16, vertical: 4),
                       child: Card(
                         child: ListTile(
                           leading: CircleAvatar(
@@ -192,17 +189,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           title: Text(inv.invoiceNumber),
                           subtitle: Text(inv.customerName),
                           trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: .center,
+                            crossAxisAlignment: .end,
                             children: [
                               Text(
                                 '\$${inv.total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: const TextStyle(fontWeight: .bold),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding: const .symmetric(
                                   horizontal: 6,
                                   vertical: 2,
                                 ),
@@ -271,7 +266,7 @@ class _StatRow extends StatelessWidget {
       height: 110,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const .symmetric(horizontal: 16),
         children: [
           _StatChip(
             label: 'This Month',
@@ -326,25 +321,21 @@ class _StatChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 140,
-      margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
-      padding: const EdgeInsets.all(14),
+      margin: const .only(right: 12, top: 4, bottom: 4),
+      padding: const .all(14),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withAlpha(40)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           Icon(icon, color: color, size: 20),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: .bold, fontSize: 18, color: color),
           ),
           const SizedBox(height: 2),
           Text(
@@ -373,14 +364,14 @@ class _RevenueBarChart extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: .end,
       children: bars.map((bar) {
         final frac = max == 0 ? 0.0 : bar.value / max;
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const .symmetric(horizontal: 2),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: .end,
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 600),
@@ -432,8 +423,8 @@ class _PaidUnpaidDonut extends StatelessWidget {
         ),
         const SizedBox(width: 16),
         Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: .center,
+          crossAxisAlignment: .start,
           children: [
             _Legend(
               color: Colors.green,
@@ -484,12 +475,12 @@ class _Legend extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: .start,
           children: [
             Text(label, style: const TextStyle(fontSize: 12)),
             Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              style: const TextStyle(fontWeight: .bold, fontSize: 14),
             ),
           ],
         ),

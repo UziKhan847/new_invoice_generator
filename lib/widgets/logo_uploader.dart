@@ -13,12 +13,12 @@ class LogoUploader extends StatelessWidget {
         width: 100,
         height: 100,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: .circular(12),
           border: Border.all(color: Colors.grey),
         ),
         child: imageUrl == null
             ? const Center(child: Icon(Icons.upload))
-            : Image.network(imageUrl!, fit: BoxFit.cover),
+            : Image.network(imageUrl!, fit: .cover),
       ),
     );
   }

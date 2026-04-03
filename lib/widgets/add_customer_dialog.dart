@@ -32,7 +32,7 @@ class _AddCustomerDialogState extends ConsumerState<AddCustomerDialog> {
       title: const Text('Add Customer'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
             TextField(
               controller: _name,
@@ -42,13 +42,13 @@ class _AddCustomerDialogState extends ConsumerState<AddCustomerDialog> {
             TextField(
               controller: _email,
               decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
+              keyboardType: .emailAddress,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _phone,
               decoration: const InputDecoration(labelText: 'Phone'),
-              keyboardType: TextInputType.phone,
+              keyboardType: .phone,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -74,7 +74,7 @@ class _AddCustomerDialogState extends ConsumerState<AddCustomerDialog> {
                         .read(customerProvider.notifier)
                         .addCustomer(
                           Customer(
-                            id: '', // assigned by Supabase
+                            id: '',
                             name: _name.text.trim(),
                             email: _email.text.trim(),
                             address: _address.text.trim(),

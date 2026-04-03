@@ -14,9 +14,10 @@ class ReceiptPdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('Receipt',
-                style: pw.TextStyle(
-                    fontSize: 24, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Receipt',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
             pw.SizedBox(height: 16),
             pw.Text('Invoice: ${invoice.invoiceNumber}'),
             pw.Text('Customer: ${invoice.customerName}'),

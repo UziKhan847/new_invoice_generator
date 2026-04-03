@@ -61,21 +61,22 @@ class InvoiceDetailScreen extends ConsumerWidget {
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const .all(16),
             children: [
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const .all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: .start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: .spaceBetween,
                         children: [
                           Text(
                             invoice.customerName,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(fontWeight: .bold),
                           ),
                           _StatusBadge(isPaid: invoice.isPaid),
                         ],
@@ -97,14 +98,15 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const .all(16),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: .start,
                       children: [
                         Text(
                           'Sent by',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -116,13 +118,11 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: .start,
                                 children: [
                                   Text(
                                     invoice.senderName!,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: const TextStyle(fontWeight: .w600),
                                   ),
                                   if (invoice.senderRole != null)
                                     Text(
@@ -143,7 +143,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             invoice.senderEmail!.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding: const .symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
@@ -164,22 +164,21 @@ class InvoiceDetailScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: .start,
                                     children: [
                                       const Text(
                                         'E-Transfer to',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: Colors.green,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: .w500,
                                         ),
                                       ),
                                       Text(
                                         invoice.senderEmail!,
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: .bold,
                                           color: Colors.green,
                                         ),
                                       ),
@@ -198,20 +197,20 @@ class InvoiceDetailScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const .all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: .start,
                     children: [
                       Text(
                         'Items',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                       ),
                       const Divider(),
                       ...invoice.items.map(
                         (item) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const .symmetric(vertical: 6),
                           child: Row(
                             children: [
                               Expanded(child: Text(item.description)),
@@ -221,9 +220,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                               const SizedBox(width: 16),
                               Text(
                                 '\$${item.total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: const TextStyle(fontWeight: .w600),
                               ),
                             ],
                           ),
@@ -322,12 +319,12 @@ class InvoiceDetailScreen extends ConsumerWidget {
       builder: (_) => AlertDialog(
         title: const Text('Email Invoice'),
         content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
           children: [
             if (invoice.customerEmail != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const .only(bottom: 8),
                 child: Row(
                   children: [
                     const Icon(
@@ -385,7 +382,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const .symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: isPaid
             ? Colors.green.withAlpha(25)
@@ -397,7 +394,7 @@ class _StatusBadge extends StatelessWidget {
         isPaid ? 'Paid' : 'Unpaid',
         style: TextStyle(
           color: isPaid ? Colors.green : Colors.orange,
-          fontWeight: FontWeight.w600,
+          fontWeight: .w600,
           fontSize: 12,
         ),
       ),
@@ -418,18 +415,15 @@ class _TotalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const .symmetric(vertical: 2),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: .spaceBetween,
         children: [
-          Text(
-            label,
-            style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
-          ),
+          Text(label, style: bold ? const TextStyle(fontWeight: .bold) : null),
           Text(
             '\$${value.toStringAsFixed(2)}',
             style: bold
-                ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                ? const TextStyle(fontWeight: .bold, fontSize: 16)
                 : null,
           ),
         ],

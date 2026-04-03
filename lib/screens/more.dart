@@ -27,7 +27,7 @@ class MoreScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('More')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const .all(16),
         children: [
           // Company card with logo upload
           companyAsync.when(
@@ -35,7 +35,7 @@ class MoreScreen extends ConsumerWidget {
             error: (_, _) => const SizedBox.shrink(),
             data: (company) => Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const .all(16),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -45,7 +45,7 @@ class MoreScreen extends ConsumerWidget {
                           context: context,
                           builder: (_) => SafeArea(
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisSize: .min,
                               children: [
                                 ListTile(
                                   leading: const Icon(Icons.photo_library),
@@ -127,9 +127,7 @@ class MoreScreen extends ConsumerWidget {
                             height: 72,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: cs.outline.withAlpha(80),
-                              ),
+                              border: .all(color: cs.outline.withAlpha(80)),
                               color: cs.surfaceContainerHighest,
                             ),
                             child: company['logo_url'] != null
@@ -164,10 +162,10 @@ class MoreScreen extends ConsumerWidget {
                             bottom: 0,
                             right: 0,
                             child: Container(
-                              padding: const EdgeInsets.all(3),
+                              padding: const .all(3),
                               decoration: BoxDecoration(
                                 color: cs.primary,
-                                shape: BoxShape.circle,
+                                shape: .circle,
                               ),
                               child: Icon(
                                 Icons.camera_alt,
@@ -182,12 +180,12 @@ class MoreScreen extends ConsumerWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: .start,
                         children: [
                           Text(
                             company['name'] as String? ?? 'My Company',
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: .bold,
                             ),
                           ),
                           if (company['email'] != null)
@@ -328,12 +326,12 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const .only(left: 4, bottom: 8),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontWeight: .bold,
           letterSpacing: 1.2,
           color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
         ),
@@ -399,10 +397,7 @@ class _CropScreenState extends State<_CropScreen> {
             },
             child: const Text(
               'Done',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.white, fontWeight: .bold),
             ),
           ),
         ],
@@ -418,9 +413,9 @@ class _CropScreenState extends State<_CropScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          padding: const .symmetric(horizontal: 32, vertical: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: .spaceEvenly,
             children: [
               IconButton(
                 icon: const Icon(Icons.rotate_left, color: Colors.white),

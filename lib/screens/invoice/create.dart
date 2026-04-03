@@ -111,20 +111,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Create Invoice')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const .all(16),
         children: [
           // ── Customer ──────────────────────────────────────────────────
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const .all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: [
                   Text(
                     'Customer',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                   ),
                   const SizedBox(height: 10),
                   customersAsync.when(
@@ -192,14 +192,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 ? const SizedBox.shrink()
                 : Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const .all(16),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: .start,
                         children: [
                           Text(
                             'Sender / Employee',
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -242,7 +243,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               _selectedEmployee!.email.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: const .symmetric(
                                 horizontal: 10,
                                 vertical: 8,
                               ),
@@ -267,7 +268,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: Colors.green,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: .w500,
                                       ),
                                     ),
                                   ),
@@ -314,15 +315,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           if (services.isNotEmpty)
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const .all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Text(
                       'Quick Add Service',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -348,15 +349,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           // ── Manual item entry ─────────────────────────────────────────
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const .all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: [
                   Text(
                     'Add Custom Item',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -406,20 +407,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           if (items.isNotEmpty)
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const .all(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Text(
                       'Items',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
                     ),
                     const Divider(),
                     ...items.map(
                       (i) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const .symmetric(vertical: 4),
                         child: Row(
                           children: [
                             Expanded(child: Text(i.description)),
@@ -429,9 +430,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             const SizedBox(width: 8),
                             Text(
                               '\$${i.total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: const TextStyle(fontWeight: .w600),
                             ),
                             IconButton(
                               icon: const Icon(
@@ -449,14 +448,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                        crossAxisAlignment: .end,
                         children: [
                           Text('Subtotal: \$${_subtotal.toStringAsFixed(2)}'),
                           Text('Tax (13%): \$${_tax.toStringAsFixed(2)}'),
                           Text(
                             'Total: \$${_total.toStringAsFixed(2)}',
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: .bold,
                               fontSize: 15,
                             ),
                           ),

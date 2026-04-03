@@ -49,14 +49,13 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
           }
 
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const .all(16),
             child: Column(
               children: [
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
-                  decoration:
-                      const InputDecoration(labelText: 'Company Name'),
+                  decoration: const InputDecoration(labelText: 'Company Name'),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -97,7 +96,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Company profile saved')),
+                                  content: Text('Company profile saved'),
+                                ),
                               );
                             }
                           } catch (e) {

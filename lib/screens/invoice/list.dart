@@ -65,7 +65,7 @@ class InvoiceListScreen extends ConsumerWidget {
                 if (invoices.isEmpty) {
                   return Center(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: .center,
                       children: [
                         Icon(
                           Icons.receipt_long_outlined,
@@ -83,7 +83,7 @@ class InvoiceListScreen extends ConsumerWidget {
                   );
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.all(12),
+                  padding: const .all(12),
                   itemCount: invoices.length,
                   itemBuilder: (context, i) =>
                       _InvoiceTile(invoice: invoices[i]),
@@ -124,9 +124,9 @@ class _InvoiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const .only(bottom: 8),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const .symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: invoice.isPaid
               ? Colors.green.withAlpha(30)
@@ -142,14 +142,14 @@ class _InvoiceTile extends StatelessWidget {
             Expanded(
               child: Text(
                 invoice.invoiceNumber,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: const TextStyle(fontWeight: .w600),
               ),
             ),
             _StatusBadge(isPaid: invoice.isPaid),
           ],
         ),
         subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: .start,
           children: [
             const SizedBox(height: 4),
             Text(
@@ -174,12 +174,12 @@ class _InvoiceTile extends StatelessWidget {
           ],
         ),
         trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: .center,
+          crossAxisAlignment: .end,
           children: [
             Text(
               '\$${invoice.total.toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              style: const TextStyle(fontWeight: .bold, fontSize: 15),
             ),
           ],
         ),
@@ -201,7 +201,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const .symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: isPaid
             ? Colors.green.withAlpha(20)
@@ -214,7 +214,7 @@ class _StatusBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           color: isPaid ? Colors.green : Colors.orange,
-          fontWeight: FontWeight.w600,
+          fontWeight: .w600,
         ),
       ),
     );
@@ -288,7 +288,7 @@ class _ActiveFilterChips extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const .fromLTRB(12, 8, 12, 0),
       child: Row(children: chips),
     );
   }
@@ -318,7 +318,7 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const .only(right: 8),
       child: Chip(
         label: Text(label, style: const TextStyle(fontSize: 12)),
         deleteIcon: const Icon(Icons.close, size: 14),
@@ -355,24 +355,24 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     final now = DateTime.now();
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: .fromLTRB(
         20,
         20,
         20,
         MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: .min,
+        crossAxisAlignment: .start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: .spaceBetween,
             children: [
               Text(
                 'Filter Invoices',
                 style: Theme.of(
                   context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ).textTheme.titleLarge?.copyWith(fontWeight: .bold),
               ),
               TextButton(
                 onPressed: () {

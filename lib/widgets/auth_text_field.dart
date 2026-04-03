@@ -33,13 +33,13 @@ class AuthTextField extends StatelessWidget {
         fillColor:
             theme.inputDecorationTheme.fillColor ??
             theme.cardColor.withValues(alpha: 0.05),
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: const .symmetric(
           vertical: 16,
           horizontal: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: .circular(14),
+          borderSide: .none,
         ),
       ),
     );

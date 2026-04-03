@@ -40,7 +40,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
         children: [
           // Filter bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const .fromLTRB(16, 12, 16, 0),
             child: Row(
               children: [
                 // Year
@@ -49,14 +49,22 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                     initialValue: _filterYear,
                     isDense: true,
                     decoration: const InputDecoration(
-                        labelText: 'Year', isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10)),
+                      labelText: 'Year',
+                      isDense: true,
+                      contentPadding: .symmetric(horizontal: 12, vertical: 10),
+                    ),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All years')),
-                      ...List.generate(5, (i) => DropdownMenuItem(
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All years'),
+                      ),
+                      ...List.generate(
+                        5,
+                        (i) => DropdownMenuItem(
                           value: now.year - i,
-                          child: Text('${now.year - i}'))),
+                          child: Text('${now.year - i}'),
+                        ),
+                      ),
                     ],
                     onChanged: (v) {
                       setState(() => _filterYear = v);
@@ -74,13 +82,24 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                       initialValue: _filterCustomerId,
                       isDense: true,
                       decoration: const InputDecoration(
-                          labelText: 'Customer', isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10)),
+                        labelText: 'Customer',
+                        isDense: true,
+                        contentPadding: .symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
                       items: [
                         const DropdownMenuItem(value: null, child: Text('All')),
-                        ...customers.map((c) => DropdownMenuItem(
-                            value: c.id, child: Text(c.name, overflow: TextOverflow.ellipsis))),
+                        ...customers.map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(
+                              c.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
                       ],
                       onChanged: (v) => setState(() => _filterCustomerId = v),
                     ),
@@ -98,16 +117,30 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                             initialValue: _filterSenderId,
                             isDense: true,
                             decoration: const InputDecoration(
-                                labelText: 'Sender', isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10)),
+                              labelText: 'Sender',
+                              isDense: true,
+                              contentPadding: .symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                            ),
                             items: [
-                              const DropdownMenuItem(value: null, child: Text('All')),
-                              ...employees.map((e) => DropdownMenuItem(
+                              const DropdownMenuItem(
+                                value: null,
+                                child: Text('All'),
+                              ),
+                              ...employees.map(
+                                (e) => DropdownMenuItem(
                                   value: e.id,
-                                  child: Text(e.name, overflow: TextOverflow.ellipsis))),
+                                  child: Text(
+                                    e.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
                             ],
-                            onChanged: (v) => setState(() => _filterSenderId = v),
+                            onChanged: (v) =>
+                                setState(() => _filterSenderId = v),
                           ),
                   ),
                 ),
@@ -118,7 +151,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
 
           // Chart tabs
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const .symmetric(horizontal: 16),
             child: SegmentedButton<int>(
               segments: const [
                 ButtonSegment(value: 0, label: Text('Revenue')),
@@ -142,27 +175,28 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                 var countBars = analytics.invoiceCountBars;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const .symmetric(horizontal: 16),
                   child: Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const .all(20),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: .start,
                         children: [
-                          Text(_chartTitle(_chartIndex),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            _chartTitle(_chartIndex),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: .bold),
+                          ),
                           const SizedBox(height: 16),
                           Expanded(
                             child: _chartIndex == 0
                                 ? _RevenueBarChart(bars: bars)
                                 : _chartIndex == 1
-                                    ? _PaidUnpaidDonut(
-                                        paid: analytics.paidAmount,
-                                        unpaid: analytics.unpaidAmount)
-                                    : _CountLineChart(bars: countBars),
+                                ? _PaidUnpaidDonut(
+                                    paid: analytics.paidAmount,
+                                    unpaid: analytics.unpaidAmount,
+                                  )
+                                : _CountLineChart(bars: countBars),
                           ),
                           // Legend for bar chart
                           if (_chartIndex == 0 && bars.isNotEmpty) ...[
@@ -185,10 +219,14 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
 
   String _chartTitle(int i) {
     switch (i) {
-      case 0: return 'Monthly Revenue';
-      case 1: return 'Paid vs Unpaid';
-      case 2: return 'Invoice Count by Month';
-      default: return '';
+      case 0:
+        return 'Monthly Revenue';
+      case 1:
+        return 'Paid vs Unpaid';
+      case 2:
+        return 'Invoice Count by Month';
+      default:
+        return '';
     }
   }
 }
@@ -205,19 +243,21 @@ class _RevenueBarChart extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: .end,
       children: bars.map((bar) {
         final frac = max == 0 ? 0.0 : bar.value / max;
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const .symmetric(horizontal: 2),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: .end,
               children: [
                 if (bar.value > 0)
-                  Text('\$${bar.value.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 8),
-                      overflow: TextOverflow.visible),
+                  Text(
+                    '\$${bar.value.toStringAsFixed(0)}',
+                    style: const TextStyle(fontSize: 8),
+                    overflow: TextOverflow.visible,
+                  ),
                 const SizedBox(height: 2),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 600),
@@ -229,9 +269,11 @@ class _RevenueBarChart extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(bar.label,
-                    style: const TextStyle(fontSize: 9),
-                    overflow: TextOverflow.visible),
+                Text(
+                  bar.label,
+                  style: const TextStyle(fontSize: 9),
+                  overflow: TextOverflow.visible,
+                ),
               ],
             ),
           ),
@@ -248,10 +290,13 @@ class _BarLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = bars.fold(0.0, (s, b) => s + b.value);
-    return Text('Total: \$${total.toStringAsFixed(2)}',
-        style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(140)));
+    return Text(
+      'Total: \$${total.toStringAsFixed(2)}',
+      style: TextStyle(
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+      ),
+    );
   }
 }
 
@@ -269,30 +314,38 @@ class _PaidUnpaidDonut extends StatelessWidget {
         Expanded(
           child: CustomPaint(
             painter: _DonutPainter(
-                paid: paid, unpaid: unpaid,
-                paidColor: Colors.green, unpaidColor: Colors.orange),
+              paid: paid,
+              unpaid: unpaid,
+              paidColor: Colors.green,
+              unpaidColor: Colors.orange,
+            ),
           ),
         ),
         const SizedBox(width: 24),
         Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: .center,
+          crossAxisAlignment: .start,
           children: [
-            _Legend(color: Colors.green, label: 'Paid',
-                value: '\$${paid.toStringAsFixed(2)}'),
+            _Legend(
+              color: Colors.green,
+              label: 'Paid',
+              value: '\$${paid.toStringAsFixed(2)}',
+            ),
             const SizedBox(height: 16),
-            _Legend(color: Colors.orange, label: 'Unpaid',
-                value: '\$${unpaid.toStringAsFixed(2)}'),
+            _Legend(
+              color: Colors.orange,
+              label: 'Unpaid',
+              value: '\$${unpaid.toStringAsFixed(2)}',
+            ),
             const SizedBox(height: 16),
             Text(
               total == 0
                   ? 'No data'
                   : '${((paid / total) * 100).toStringAsFixed(1)}% collected',
-              style: TextStyle(fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withAlpha(150)),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+              ),
             ),
           ],
         ),
@@ -305,37 +358,55 @@ class _Legend extends StatelessWidget {
   final Color color;
   final String label;
   final String value;
-  const _Legend({required this.color, required this.label, required this.value});
+  const _Legend({
+    required this.color,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-          width: 12, height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 8),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 12)),
-        Text(value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-      ]),
-    ]);
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: .start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
+            Text(
+              value,
+              style: const TextStyle(fontWeight: .bold, fontSize: 14),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
 class _DonutPainter extends CustomPainter {
   final double paid, unpaid;
   final Color paidColor, unpaidColor;
-  _DonutPainter({required this.paid, required this.unpaid,
-      required this.paidColor, required this.unpaidColor});
+  _DonutPainter({
+    required this.paid,
+    required this.unpaid,
+    required this.paidColor,
+    required this.unpaidColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final total = paid + unpaid;
     if (total == 0) return;
     final rect = Rect.fromCircle(
-        center: Offset(size.width / 2, size.height / 2),
-        radius: size.height / 2 - 8);
+      center: Offset(size.width / 2, size.height / 2),
+      radius: size.height / 2 - 8,
+    );
     const strokeWidth = 32.0;
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -346,7 +417,13 @@ class _DonutPainter extends CustomPainter {
     paint.color = paidColor;
     canvas.drawArc(rect, start, paidSweep, false, paint);
     paint.color = unpaidColor;
-    canvas.drawArc(rect, start + paidSweep, 6.2831853 - paidSweep, false, paint);
+    canvas.drawArc(
+      rect,
+      start + paidSweep,
+      6.2831853 - paidSweep,
+      false,
+      paint,
+    );
   }
 
   @override
@@ -372,12 +449,19 @@ class _CountLineChart extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Row(children: bars
-            .map((b) => Expanded(
-                child: Text(b.label,
+        Row(
+          children: bars
+              .map(
+                (b) => Expanded(
+                  child: Text(
+                    b.label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 9))))
-            .toList()),
+                    style: const TextStyle(fontSize: 9),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
       ],
     );
   }
@@ -391,8 +475,7 @@ class _LinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (bars.length < 2) return;
-    final max =
-        bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
+    final max = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
     if (max == 0) return;
 
     final linePaint = Paint()
@@ -410,9 +493,13 @@ class _LinePainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
-    final points = List.generate(bars.length, (i) => Offset(
+    final points = List.generate(
+      bars.length,
+      (i) => Offset(
         (i / (bars.length - 1)) * size.width,
-        size.height - (bars[i].value / max) * (size.height - 10)));
+        size.height - (bars[i].value / max) * (size.height - 10),
+      ),
+    );
 
     final linePath = Path()..moveTo(points[0].dx, points[0].dy);
     for (int i = 1; i < points.length; i++) {
@@ -429,7 +516,9 @@ class _LinePainter extends CustomPainter {
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(linePath, linePaint);
 
-    final dotPaint = Paint()..color = color..style = PaintingStyle.fill;
+    final dotPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
     for (final p in points) {
       canvas.drawCircle(p, 4, dotPaint);
     }

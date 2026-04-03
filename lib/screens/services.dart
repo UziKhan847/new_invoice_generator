@@ -18,7 +18,7 @@ class ServicesScreen extends ConsumerWidget {
         data: (services) => services.isEmpty
             ? Center(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: .center,
                   children: [
                     const Icon(
                       Icons.design_services_outlined,
@@ -39,7 +39,7 @@ class ServicesScreen extends ConsumerWidget {
                 ),
               )
             : ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: const .all(12),
                 itemCount: services.length,
                 itemBuilder: (context, i) {
                   final s = services[i];
@@ -59,23 +59,23 @@ class ServicesScreen extends ConsumerWidget {
                       ),
                       title: Text(
                         s.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontWeight: .w600),
                       ),
                       subtitle:
                           s.description != null && s.description!.isNotEmpty
                           ? Text(s.description!)
                           : null,
                       trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisSize: .min,
                         children: [
                           Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: .center,
+                            crossAxisAlignment: .end,
                             children: [
                               Text(
                                 '\$${s.unitPrice.toStringAsFixed(2)}',
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: .bold,
                                   fontSize: 14,
                                 ),
                               ),
@@ -171,7 +171,7 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
       title: Text(isEdit ? 'Edit Service' : 'Add Service'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
             TextField(
               controller: _nameCtrl,
@@ -191,9 +191,7 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
                   flex: 2,
                   child: TextField(
                     controller: _priceCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
+                    keyboardType: const .numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Price (\$)'),
                   ),
                 ),

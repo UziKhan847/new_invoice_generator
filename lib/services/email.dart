@@ -19,29 +19,42 @@ class EmailService {
         build: (ctx) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('Invoice #${invoice.invoiceNumber}',
-                style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Invoice #${invoice.invoiceNumber}',
+              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+            ),
             pw.SizedBox(height: 6),
             pw.Text('Customer: ${invoice.customerName}'),
-            pw.Text('Date: ${invoice.issueDate.toLocal().toString().split(' ')[0]}'),
+            pw.Text(
+              'Date: ${invoice.issueDate.toLocal().toString().split(' ')[0]}',
+            ),
             if (invoice.dueDate != null)
-              pw.Text('Due: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}'),
+              pw.Text(
+                'Due: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}',
+              ),
             pw.SizedBox(height: 14),
             pw.Divider(),
             pw.SizedBox(height: 8),
-            pw.Row(children: [
-              pw.Expanded(child: pw.Text('Description')),
-              pw.Text('Qty   Unit Price   Total'),
-            ]),
+            pw.Row(
+              children: [
+                pw.Expanded(child: pw.Text('Description')),
+                pw.Text('Qty   Unit Price   Total'),
+              ],
+            ),
             pw.SizedBox(height: 6),
-            ...invoice.items.map((item) => pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 3),
-                  child: pw.Row(children: [
+            ...invoice.items.map(
+              (item) => pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                child: pw.Row(
+                  children: [
                     pw.Expanded(child: pw.Text(item.description)),
                     pw.Text(
-                        '${item.quantity}   \$${item.unitPrice.toStringAsFixed(2)}   \$${item.total.toStringAsFixed(2)}'),
-                  ]),
-                )),
+                      '${item.quantity}   \$${item.unitPrice.toStringAsFixed(2)}   \$${item.total.toStringAsFixed(2)}',
+                    ),
+                  ],
+                ),
+              ),
+            ),
             pw.SizedBox(height: 10),
             pw.Divider(),
             pw.SizedBox(height: 8),
@@ -53,8 +66,10 @@ class EmailService {
                   pw.Text('Subtotal: \$${invoice.subtotal.toStringAsFixed(2)}'),
                   pw.Text('Tax (13%): \$${invoice.tax.toStringAsFixed(2)}'),
                   pw.SizedBox(height: 4),
-                  pw.Text('Total: \$${invoice.total.toStringAsFixed(2)}',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(
+                    'Total: \$${invoice.total.toStringAsFixed(2)}',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
                 ],
               ),
             ),
@@ -74,7 +89,9 @@ class EmailService {
     final body = Uri.encodeComponent(
       'Please find attached invoice ${invoice.invoiceNumber} for \$${invoice.total.toStringAsFixed(2)}.\n\nThank you.',
     );
-    final mailUri = Uri.parse('mailto:$recipientEmail?subject=$subject&body=$body');
+    final mailUri = Uri.parse(
+      'mailto:$recipientEmail?subject=$subject&body=$body',
+    );
 
     if (await canLaunchUrl(mailUri)) {
       await launchUrl(mailUri);
@@ -114,11 +131,11 @@ class EmailService {
 //     pdf.addPage(
 //       pw.Page(
 //         build: (ctx) => pw.Column(
-//           crossAxisAlignment: pw.CrossAxisAlignment.start,
+//           crossAxisAlignment: pw..start,
 //           children: [
 //             pw.Text('Invoice #${invoice.invoiceNumber}',
 //                 style: pw.TextStyle(
-//                     fontSize: 22, fontWeight: pw.FontWeight.bold)),
+//                     fontSize: 22, fontWeight: pw..bold)),
 //             pw.SizedBox(height: 6),
 //             pw.Text('Customer: ${invoice.customerName}'),
 //             pw.Text(
@@ -137,7 +154,7 @@ class EmailService {
 //             ),
 //             pw.SizedBox(height: 6),
 //             ...invoice.items.map((item) => pw.Padding(
-//                   padding: const pw.EdgeInsets.symmetric(vertical: 3),
+//                   padding: const pw..symmetric(vertical: 3),
 //                   child: pw.Row(children: [
 //                     pw.Expanded(child: pw.Text(item.description)),
 //                     pw.Text(
@@ -150,7 +167,7 @@ class EmailService {
 //             pw.Align(
 //               alignment: pw.Alignment.centerRight,
 //               child: pw.Column(
-//                 crossAxisAlignment: pw.CrossAxisAlignment.end,
+//                 crossAxisAlignment: pw..end,
 //                 children: [
 //                   pw.Text(
 //                       'Subtotal: \$${invoice.subtotal.toStringAsFixed(2)}'),
@@ -158,7 +175,7 @@ class EmailService {
 //                   pw.SizedBox(height: 4),
 //                   pw.Text('Total: \$${invoice.total.toStringAsFixed(2)}',
 //                       style:
-//                           pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+//                           pw.TextStyle(fontWeight: pw..bold)),
 //                 ],
 //               ),
 //             ),

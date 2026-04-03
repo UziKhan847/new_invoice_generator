@@ -28,7 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const .symmetric(horizontal: 28),
             child: Form(
               key: _formKey,
               child: Column(
@@ -37,7 +37,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Text(
                     "Create Account",
                     style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: .bold,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -53,7 +53,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   // Card container
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const .all(24),
                     decoration: BoxDecoration(
                       color: theme.cardColor,
                       borderRadius: BorderRadius.circular(24),
@@ -86,7 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const .symmetric(vertical: 16),
                               backgroundColor: colorScheme.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -161,7 +161,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   const SizedBox(height: 28),
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: .center,
                     children: [
                       Text(
                         "Already have an account? ",
@@ -172,7 +172,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: Text(
                           "Sign in",
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: .w600,
                             color: colorScheme.primary,
                           ),
                         ),

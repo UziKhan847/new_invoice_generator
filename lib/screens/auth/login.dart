@@ -30,7 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const .symmetric(horizontal: 28),
             child: Form(
               key: _formKey,
               child: Column(
@@ -40,7 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     "Welcome Back",
                     style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: .bold,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -56,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   // Card container
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const .all(24),
                     decoration: BoxDecoration(
                       color: theme.cardColor,
                       borderRadius: BorderRadius.circular(24),
@@ -89,7 +89,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const .symmetric(vertical: 16),
                               backgroundColor: colorScheme.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -158,7 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 28),
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: .center,
                     children: [
                       Text(
                         "Don’t have an account? ",
@@ -176,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           "Create one",
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: .w600,
                             color: colorScheme.primary,
                           ),
                         ),
