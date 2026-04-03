@@ -214,9 +214,9 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
                     } else {
                       await ref.read(employeeProvider.notifier).add(e);
                     }
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: $e')));

@@ -9,10 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: url,
-    anonKey: anonKey,
-  );
+  await Supabase.initialize(url: url, anonKey: anonKey);
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -56,7 +53,7 @@ class _AuthGateState extends State<_AuthGate> {
     return StreamBuilder<AuthState>(
       stream: _authStream,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == .waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );

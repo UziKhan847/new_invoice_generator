@@ -81,9 +81,9 @@ class _AddCustomerDialogState extends ConsumerState<AddCustomerDialog> {
                             phone: _phone.text.trim(),
                           ),
                         );
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: $e')));

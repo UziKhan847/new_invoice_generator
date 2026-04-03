@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/models/employee.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
 import 'package:new_invoice_generator/models/invoice_item.dart';
 import 'package:new_invoice_generator/models/service.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/providers/employee.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/providers/service.dart';
 
@@ -23,6 +25,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   String? _selectedCustomerId;
   String? _selectedCustomerName;
   String? _selectedCustomerEmail;
+
+  // Sender employee — optional
+  Employee? _selectedEmployee;
+
   DateTime? _dueDate;
   List<InvoiceItem> items = [];
 
@@ -81,6 +87,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             issueDate: DateTime.now(),
             dueDate: _dueDate,
             items: items,
+            senderEmployeeId: _selectedEmployee?.id,
+            senderName: _selectedEmployee?.name,
+            senderRole: _selectedEmployee?.role,
+            senderEmail: _selectedEmployee?.email,
           ),
         );
     Navigator.pop(context);
@@ -93,14 +103,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   @override
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(customerProvider);
-    final services = ref.watch(serviceProvider);
+    final employeesAsync = ref.watch(employeeProvider);
+    final servicesAsync = ref.watch(serviceProvider);
+    final services = servicesAsync.asData?.value ?? [];
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create Invoice')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Customer picker
+          // ── Customer ──────────────────────────────────────────────────
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -143,13 +156,133 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       },
                     ),
                   ),
+                  // Show customer email confirmation
+                  if (_selectedCustomerEmail != null &&
+                      _selectedCustomerEmail!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          size: 14,
+                          color: cs.onSurface.withAlpha(140),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _selectedCustomerEmail!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.withAlpha(140),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
 
-          // Due date
+          // ── Sender / Employee (optional) ──────────────────────────────
+          employeesAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (employees) => employees.isEmpty
+                ? const SizedBox.shrink()
+                : Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sender / Employee',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'The employee who provided the service. '
+                            'Their email will appear on the invoice '
+                            'for e-transfer payment.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurface.withAlpha(150),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedEmployee?.id,
+                            decoration: const InputDecoration(
+                              labelText: 'Select employee (optional)',
+                            ),
+                            items: [
+                              const DropdownMenuItem(
+                                value: null,
+                                child: Text('No employee'),
+                              ),
+                              ...employees.map(
+                                (e) => DropdownMenuItem(
+                                  value: e.id,
+                                  child: Text('${e.name} · ${e.role}'),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              setState(() {
+                                _selectedEmployee = v == null
+                                    ? null
+                                    : employees.firstWhere((e) => e.id == v);
+                              });
+                            },
+                          ),
+                          // Show employee email confirmation
+                          if (_selectedEmployee?.email != null &&
+                              _selectedEmployee!.email.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withAlpha(20),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.green.withAlpha(60),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    size: 14,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'E-transfer to: ${_selectedEmployee!.email}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Due date ──────────────────────────────────────────────────
           Card(
             child: ListTile(
               leading: const Icon(Icons.calendar_today_outlined),
@@ -177,7 +310,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Quick-add services
+          // ── Quick-add services ────────────────────────────────────────
           if (services.isNotEmpty)
             Card(
               child: Padding(
@@ -212,7 +345,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ),
           if (services.isNotEmpty) const SizedBox(height: 12),
 
-          // Manual item
+          // ── Manual item entry ─────────────────────────────────────────
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -269,7 +402,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Items + totals
+          // ── Items list + totals ───────────────────────────────────────
           if (items.isNotEmpty)
             Card(
               child: Padding(

@@ -47,8 +47,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     "Sign in to continue",
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                        0.6,
+                      color: theme.textTheme.bodyMedium?.color?.withValues(
+                        alpha: 0.6,
                       ),
                     ),
                   ),
@@ -62,7 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -98,8 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             onPressed: _loading
                                 ? null
                                 : () async {
-                                    if (!_formKey.currentState!.validate())
+                                    if (!_formKey.currentState!.validate()) {
                                       return;
+                                    }
 
                                     setState(() => _loading = true);
 
@@ -111,7 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             _password.text.trim(),
                                           );
 
-                                      if (mounted &&
+                                      if (context.mounted &&
                                           ref.read(authProvider) != null) {
                                         Navigator.pushReplacement(
                                           context,
@@ -121,11 +122,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         );
                                       }
                                     } catch (e) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(content: Text(e.toString())),
-                                      );
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text(e.toString())),
+                                        );
+                                      }
                                     } finally {
                                       setState(() => _loading = false);
                                     }
@@ -188,4 +191,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
-  }
+}

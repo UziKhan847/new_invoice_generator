@@ -343,7 +343,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                   ...employees.map(
                     (e) => DropdownMenuItem(
                       value: e.id,
-                      child: Text('${e.name} · ${e.role}'),
+                      child: Text('\${e.name} · \${e.role}'),
                     ),
                   ),
                 ],
@@ -393,14 +393,14 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                           senderRole: sender?.role,
                           senderEmail: sender?.email,
                         );
-                    if (mounted) {
+                    if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Invoice generated!')),
                       );
                     }
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: \$e')));
@@ -539,9 +539,9 @@ class _EditRecurringDialogState extends ConsumerState<_EditRecurringDialog> {
                           frequency: _frequency,
                           senderEmployeeId: _senderEmployeeId,
                         );
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -592,7 +592,8 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(customerProvider);
     final employeesAsync = ref.watch(employeeProvider);
-    final services = ref.watch(serviceProvider);
+    final servicesAsync = ref.watch(serviceProvider);
+    final services = servicesAsync.asData?.value ?? [];
 
     return AlertDialog(
       title: const Text('New Recurring Invoice'),
@@ -747,9 +748,9 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
                             ),
                           ),
                         );
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: $e')));

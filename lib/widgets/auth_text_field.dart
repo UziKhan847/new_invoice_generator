@@ -27,12 +27,12 @@ class AuthTextField extends StatelessWidget {
         prefixIcon: Icon(icon, size: 20, color: theme.iconTheme.color),
         hintText: hint,
         hintStyle: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
         ),
         filled: true,
         fillColor:
             theme.inputDecorationTheme.fillColor ??
-            theme.cardColor.withOpacity(0.05),
+            theme.cardColor.withValues(alpha: 0.05),
         contentPadding: const EdgeInsets.symmetric(
           vertical: 16,
           horizontal: 16,
