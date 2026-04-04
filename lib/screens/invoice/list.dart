@@ -1,13 +1,21 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
 import 'package:new_invoice_generator/models/invoice_filter.dart';
+import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
+import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/providers/invoice_filter.dart';
 import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/invoice/create.dart';
 import 'package:new_invoice_generator/screens/invoice/detail.dart';
+import 'package:new_invoice_generator/services/download.dart';
+import 'package:new_invoice_generator/services/email.dart';
+import 'package:new_invoice_generator/services/pdf.dart';
+import 'package:new_invoice_generator/services/storage.dart';
+import 'package:printing/printing.dart';
 
 class InvoiceListScreen extends ConsumerWidget {
   const InvoiceListScreen({super.key});
@@ -54,9 +62,7 @@ class InvoiceListScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Active filter chips
           if (filter.isActive) _ActiveFilterChips(filter: filter, ref: ref),
-
           Expanded(
             child: filteredAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -65,7 +71,7 @@ class InvoiceListScreen extends ConsumerWidget {
                 if (invoices.isEmpty) {
                   return Center(
                     child: Column(
-                      mainAxisAlignment: .center,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.receipt_long_outlined,
@@ -83,7 +89,7 @@ class InvoiceListScreen extends ConsumerWidget {
                   );
                 }
                 return ListView.builder(
-                  padding: const .all(12),
+                  padding: const EdgeInsets.all(12),
                   itemCount: invoices.length,
                   itemBuilder: (context, i) =>
                       _InvoiceTile(invoice: invoices[i]),
@@ -116,77 +122,166 @@ class InvoiceListScreen extends ConsumerWidget {
 }
 
 // ── Invoice tile ──────────────────────────────────────────────────────────────
-class _InvoiceTile extends StatelessWidget {
+class _InvoiceTile extends ConsumerWidget {
   final Invoice invoice;
   const _InvoiceTile({required this.invoice});
 
+  Future<String?> _getLogoUrl(WidgetRef ref) async {
+    final company = await ref.read(companyProvider.future);
+    final path = company['logo_storage_path'] as String?;
+    String? url;
+    if (path != null) url = await StorageService.getFreshLogoUrl(path);
+    return url ?? company['logo_url'] as String?;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    return Card(
-      margin: const .only(bottom: 8),
-      child: ListTile(
-        contentPadding: const .symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: invoice.isPaid
-              ? Colors.green.withAlpha(30)
-              : cs.primary.withAlpha(30),
-          child: Icon(
-            invoice.isPaid ? Icons.check : Icons.receipt_long,
-            color: invoice.isPaid ? Colors.green : cs.primary,
-            size: 18,
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                invoice.invoiceNumber,
-                style: const TextStyle(fontWeight: .w600),
+
+    return Dismissible(
+      key: ValueKey(invoice.id),
+      direction: DismissDirection.endToStart, // swipe left to delete
+      confirmDismiss: (_) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Delete invoice?'),
+            content: Text(
+              'Invoice ${invoice.invoiceNumber} will be permanently deleted.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
               ),
-            ),
-            _StatusBadge(isPaid: invoice.isPaid),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: .start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              invoice.customerName,
-              style: TextStyle(color: cs.onSurface.withAlpha(180)),
-            ),
-            if (invoice.senderName != null)
-              Text(
-                'Sender: ${invoice.senderName}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: cs.onSurface.withAlpha(140),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (_) {
+        ref.read(invoiceProvider.notifier).deleteInvoice(invoice.id!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invoice ${invoice.invoiceNumber} deleted')),
+        );
+      },
+      // Red delete background revealed on swipe left
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_outline, color: Colors.white, size: 24),
+            SizedBox(height: 4),
             Text(
-              invoice.issueDate.toLocal().toString().split(' ')[0],
+              'Delete',
               style: TextStyle(
+                color: Colors.white,
                 fontSize: 11,
-                color: cs.onSurface.withAlpha(120),
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        trailing: Column(
-          mainAxisAlignment: .center,
-          crossAxisAlignment: .end,
-          children: [
-            Text(
-              '\$${invoice.total.toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: .bold, fontSize: 15),
+      ),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => InvoiceDetailScreen(invoiceId: invoice.id!),
             ),
-          ],
-        ),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => InvoiceDetailScreen(invoiceId: invoice.id!),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+            leading: CircleAvatar(
+              radius: 20,
+              backgroundColor: invoice.isPaid
+                  ? Colors.green.withAlpha(30)
+                  : cs.primary.withAlpha(30),
+              child: Icon(
+                invoice.isPaid ? Icons.check : Icons.receipt_long,
+                color: invoice.isPaid ? Colors.green : cs.primary,
+                size: 18,
+              ),
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    invoice.invoiceNumber,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Text(
+                  '\$${invoice.total.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        invoice.customerName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: cs.onSurface.withAlpha(180),
+                        ),
+                      ),
+                    ),
+                    _StatusBadge(isPaid: invoice.isPaid),
+                  ],
+                ),
+                if (invoice.senderName != null) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    'Sender: ${invoice.senderName}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: cs.onSurface.withAlpha(130),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 1),
+                Text(
+                  invoice.issueDate.toLocal().toString().split(' ')[0],
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.onSurface.withAlpha(110),
+                  ),
+                ),
+              ],
+            ),
+            trailing: _QuickMenu(
+              invoice: invoice,
+              getLogoUrl: () => _getLogoUrl(ref),
+            ),
           ),
         ),
       ),
@@ -194,6 +289,233 @@ class _InvoiceTile extends StatelessWidget {
   }
 }
 
+// ── Quick action popup menu ───────────────────────────────────────────────────
+enum _QuickAction { markPaid, email, download, preview }
+
+class _QuickMenu extends ConsumerWidget {
+  final Invoice invoice;
+  final Future<String?> Function() getLogoUrl;
+  const _QuickMenu({required this.invoice, required this.getLogoUrl});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<_QuickAction>(
+      iconSize: 20,
+      padding: EdgeInsets.zero,
+      tooltip: 'Quick actions',
+      icon: Icon(
+        Icons.more_vert,
+        size: 20,
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+      ),
+      onSelected: (action) async {
+        switch (action) {
+          case _QuickAction.markPaid:
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Mark as paid?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text(
+                      'Mark Paid',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && context.mounted) {
+              await ref.read(invoiceProvider.notifier).markPaid(invoice.id!);
+            }
+            break;
+
+          case _QuickAction.email:
+            if (!context.mounted) break;
+            _showQuickEmailDialog(context, ref);
+            break;
+
+          case _QuickAction.download:
+            final logoUrl = await getLogoUrl();
+            if (context.mounted) {
+              await DownloadService.downloadInvoice(
+                context: context,
+                invoice: invoice,
+                companyLogoUrl: logoUrl,
+              );
+            }
+            break;
+
+          case _QuickAction.preview:
+            final logoUrl = await getLogoUrl();
+            final inv = logoUrl != null
+                ? invoice.copyWith(companyLogoUrl: logoUrl)
+                : invoice;
+            if (context.mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => _QuickPdfPreview(invoice: inv),
+                ),
+              );
+            }
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        if (!invoice.isPaid)
+          const PopupMenuItem(
+            value: _QuickAction.markPaid,
+            child: _MenuItem(
+              icon: Icons.check_circle_outline,
+              label: 'Mark as Paid',
+              color: Colors.green,
+            ),
+          ),
+        const PopupMenuItem(
+          value: _QuickAction.email,
+          child: _MenuItem(icon: Icons.email_outlined, label: 'Email'),
+        ),
+        const PopupMenuItem(
+          value: _QuickAction.download,
+          child: _MenuItem(icon: Icons.download_outlined, label: 'Download'),
+        ),
+        const PopupMenuItem(
+          value: _QuickAction.preview,
+          child: _MenuItem(
+            icon: Icons.visibility_outlined,
+            label: 'Preview PDF',
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showQuickEmailDialog(BuildContext context, WidgetRef ref) {
+    final emailCtrl = TextEditingController(text: invoice.customerEmail ?? '');
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Email ${invoice.invoiceNumber}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (invoice.customerEmail != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Auto-filled from customer record',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Recipient email'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final logoUrl = await getLogoUrl();
+              if (context.mounted) {
+                await EmailService.emailInvoice(
+                  context: context,
+                  invoice: invoice,
+                  recipientEmail: emailCtrl.text.trim(),
+                  companyLogoUrl: logoUrl,
+                );
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  const _MenuItem({required this.icon, required this.label, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? Theme.of(context).colorScheme.onSurface;
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: c),
+        const SizedBox(width: 12),
+        Text(label, style: TextStyle(color: c)),
+      ],
+    );
+  }
+}
+
+// ── Quick PDF preview (lightweight — from list) ───────────────────────────────
+class _QuickPdfPreview extends StatelessWidget {
+  final Invoice invoice;
+  const _QuickPdfPreview({required this.invoice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Invoice ${invoice.invoiceNumber}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: 'Print',
+            onPressed: () async {
+              final bytes = await PdfService.buildPdfBytes(invoice);
+              await Printing.layoutPdf(onLayout: (_) async => bytes);
+            },
+          ),
+        ],
+      ),
+      body: PdfPreview(
+        build: (format) => PdfService.buildPdfBytes(invoice),
+        allowPrinting: false,
+        allowSharing: false,
+        canChangeOrientation: false,
+        canChangePageFormat: false,
+        canDebug: false,
+        pdfFileName: 'invoice_${invoice.invoiceNumber}.pdf',
+      ),
+    );
+  }
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   final bool isPaid;
   const _StatusBadge({required this.isPaid});
@@ -201,7 +523,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const .symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: isPaid
             ? Colors.green.withAlpha(20)
@@ -214,7 +536,7 @@ class _StatusBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           color: isPaid ? Colors.green : Colors.orange,
-          fontWeight: .w600,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -230,8 +552,7 @@ class _ActiveFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chips = <Widget>[];
-
-    if (filter.customerName != null) {
+    if (filter.customerName != null)
       chips.add(
         _Chip(
           label: 'Customer: ${filter.customerName}',
@@ -240,8 +561,7 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearCustomer: true)),
         ),
       );
-    }
-    if (filter.senderName != null) {
+    if (filter.senderName != null)
       chips.add(
         _Chip(
           label: 'Sender: ${filter.senderName}',
@@ -250,8 +570,7 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearSender: true)),
         ),
       );
-    }
-    if (filter.serviceName != null) {
+    if (filter.serviceName != null)
       chips.add(
         _Chip(
           label: 'Service: ${filter.serviceName}',
@@ -260,7 +579,6 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearService: true)),
         ),
       );
-    }
     if (filter.month != null || filter.year != null) {
       final label = [
         if (filter.month != null) _monthName(filter.month!),
@@ -275,7 +593,7 @@ class _ActiveFilterChips extends StatelessWidget {
         ),
       );
     }
-    if (filter.isPaid != null) {
+    if (filter.isPaid != null)
       chips.add(
         _Chip(
           label: filter.isPaid! ? 'Paid' : 'Unpaid',
@@ -284,11 +602,10 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearStatus: true)),
         ),
       );
-    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const .fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Row(children: chips),
     );
   }
@@ -318,7 +635,7 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const .only(right: 8),
+      padding: const EdgeInsets.only(right: 8),
       child: Chip(
         label: Text(label, style: const TextStyle(fontSize: 12)),
         deleteIcon: const Icon(Icons.close, size: 14),
@@ -355,39 +672,35 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     final now = DateTime.now();
 
     return Padding(
-      padding: .fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         20,
         20,
         20,
         MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: Column(
-        mainAxisSize: .min,
-        crossAxisAlignment: .start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: .spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Filter Invoices',
                 style: Theme.of(
                   context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: .bold),
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               TextButton(
-                onPressed: () {
-                  setState(() => _local = const InvoiceFilter());
-                },
+                onPressed: () => setState(() => _local = const InvoiceFilter()),
                 child: const Text('Clear all'),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Customer
           customersAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
             data: (customers) => DropdownButtonFormField<String>(
               initialValue: _local.customerId,
               decoration: const InputDecoration(
@@ -421,11 +734,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Sender / employee
           employeesAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
             data: (employees) => DropdownButtonFormField<String>(
               initialValue: _local.senderEmployeeId,
               decoration: const InputDecoration(
@@ -456,8 +767,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Service
           if (services.isNotEmpty)
             DropdownButtonFormField<String>(
               initialValue: _local.serviceId,
@@ -491,8 +800,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
               },
             ),
           const SizedBox(height: 12),
-
-          // Month + Year row
           Row(
             children: [
               Expanded(
@@ -562,8 +869,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Status
           DropdownButtonFormField<bool>(
             initialValue: _local.isPaid,
             decoration: const InputDecoration(
@@ -580,7 +885,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
             ),
           ),
           const SizedBox(height: 24),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

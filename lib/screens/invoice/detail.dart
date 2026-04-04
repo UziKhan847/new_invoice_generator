@@ -5,7 +5,9 @@ import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/services/email.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
+import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/storage.dart';
+import 'package:printing/printing.dart';
 import 'package:new_invoice_generator/services/receipt_pdf.dart';
 
 class InvoiceDetailScreen extends ConsumerWidget {
@@ -37,14 +39,68 @@ class InvoiceDetailScreen extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.email_outlined),
                 tooltip: 'Email invoice',
-                onPressed: () => _showEmailDialog(context, invoice),
-              ),
-              IconButton(
-                icon: const Icon(Icons.picture_as_pdf_outlined),
-                tooltip: 'Generate PDF',
                 onPressed: () async {
                   final company = await ref.read(companyProvider.future);
-                  // Try signed URL first, fall back to logo_url in state
+                  final storagePath = company['logo_storage_path'] as String?;
+                  String? logoUrl;
+                  if (storagePath != null) {
+                    logoUrl = await StorageService.getFreshLogoUrl(storagePath);
+                  }
+                  logoUrl ??= company['logo_url'] as String?;
+                  if (context.mounted) {
+                    _showEmailDialog(context, invoice, logoUrl: logoUrl);
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.visibility_outlined),
+                tooltip: 'Preview PDF',
+                onPressed: () async {
+                  final company = await ref.read(companyProvider.future);
+                  final storagePath = company['logo_storage_path'] as String?;
+                  String? logoUrl;
+                  if (storagePath != null) {
+                    logoUrl = await StorageService.getFreshLogoUrl(storagePath);
+                  }
+                  logoUrl ??= company['logo_url'] as String?;
+                  final inv = logoUrl != null
+                      ? invoice.copyWith(companyLogoUrl: logoUrl)
+                      : invoice;
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => _PdfPreviewScreen(invoice: inv),
+                      ),
+                    );
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.download_outlined),
+                tooltip: 'Save to device',
+                onPressed: () async {
+                  final company = await ref.read(companyProvider.future);
+                  final storagePath = company['logo_storage_path'] as String?;
+                  String? logoUrl;
+                  if (storagePath != null) {
+                    logoUrl = await StorageService.getFreshLogoUrl(storagePath);
+                  }
+                  logoUrl ??= company['logo_url'] as String?;
+                  if (context.mounted) {
+                    await DownloadService.downloadInvoice(
+                      context: context,
+                      invoice: invoice,
+                      companyLogoUrl: logoUrl,
+                    );
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.print_outlined),
+                tooltip: 'Print',
+                onPressed: () async {
+                  final company = await ref.read(companyProvider.future);
                   final storagePath = company['logo_storage_path'] as String?;
                   String? logoUrl;
                   if (storagePath != null) {
@@ -61,22 +117,21 @@ class InvoiceDetailScreen extends ConsumerWidget {
             ],
           ),
           body: ListView(
-            padding: const .all(16),
+            padding: const EdgeInsets.all(16),
             children: [
               Card(
                 child: Padding(
-                  padding: const .all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: .start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: .spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             invoice.customerName,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleLarge?.copyWith(fontWeight: .bold),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           _StatusBadge(isPaid: invoice.isPaid),
                         ],
@@ -98,15 +153,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
-                    padding: const .all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
-                      crossAxisAlignment: .start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Sent by',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -118,11 +172,13 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: .start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     invoice.senderName!,
-                                    style: const TextStyle(fontWeight: .w600),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   if (invoice.senderRole != null)
                                     Text(
@@ -143,7 +199,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             invoice.senderEmail!.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           Container(
-                            padding: const .symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
@@ -164,21 +220,22 @@ class InvoiceDetailScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: .start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'E-Transfer to',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: Colors.green,
-                                          fontWeight: .w500,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       Text(
                                         invoice.senderEmail!,
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          fontWeight: .bold,
+                                          fontWeight: FontWeight.bold,
                                           color: Colors.green,
                                         ),
                                       ),
@@ -197,20 +254,20 @@ class InvoiceDetailScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Card(
                 child: Padding(
-                  padding: const .all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: .start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Items',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleSmall?.copyWith(fontWeight: .bold),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Divider(),
                       ...invoice.items.map(
                         (item) => Padding(
-                          padding: const .symmetric(vertical: 6),
+                          padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Row(
                             children: [
                               Expanded(child: Text(item.description)),
@@ -220,7 +277,9 @@ class InvoiceDetailScreen extends ConsumerWidget {
                               const SizedBox(width: 16),
                               Text(
                                 '\$${item.total.toStringAsFixed(2)}',
-                                style: const TextStyle(fontWeight: .w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -311,44 +370,77 @@ class InvoiceDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showEmailDialog(BuildContext context, Invoice invoice) {
-    // Pre-fill with customer email if available
+  void _showEmailDialog(
+    BuildContext context,
+    Invoice invoice, {
+    String? logoUrl,
+  }) {
     final emailCtrl = TextEditingController(text: invoice.customerEmail ?? '');
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Email Invoice'),
         content: Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .start,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (invoice.customerEmail != null)
-              Padding(
-                padding: const .only(bottom: 8),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 14,
+            if (invoice.customerEmail != null) ...[
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Auto-filled from customer',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade700,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Auto-filled from customer record',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+            ],
             TextField(
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
                 labelText: 'Recipient email',
                 hintText: 'customer@example.com',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue.withAlpha(15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withAlpha(40)),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: Colors.blue),
+                      SizedBox(width: 6),
+                      Text(
+                        'How it works',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    '1. Your mail app opens with the recipient pre-filled.\n'
+                    '2. A share sheet opens — pick your mail app again to attach the PDF.\n'
+                    '3. Hit send.',
+                    style: TextStyle(fontSize: 11, color: Colors.blue),
+                  ),
+                ],
               ),
             ),
           ],
@@ -358,16 +450,19 @@ class InvoiceDetailScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
+            icon: const Icon(Icons.send_outlined, size: 16),
+            label: const Text('Send'),
             onPressed: () async {
+              if (emailCtrl.text.trim().isEmpty) return;
               Navigator.pop(context);
               await EmailService.emailInvoice(
                 context: context,
                 invoice: invoice,
                 recipientEmail: emailCtrl.text.trim(),
+                companyLogoUrl: logoUrl,
               );
             },
-            child: const Text('Send'),
           ),
         ],
       ),
@@ -382,7 +477,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const .symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: isPaid
             ? Colors.green.withAlpha(25)
@@ -394,7 +489,7 @@ class _StatusBadge extends StatelessWidget {
         isPaid ? 'Paid' : 'Unpaid',
         style: TextStyle(
           color: isPaid ? Colors.green : Colors.orange,
-          fontWeight: .w600,
+          fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
       ),
@@ -415,18 +510,67 @@ class _TotalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const .symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
-        mainAxisAlignment: .spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: bold ? const TextStyle(fontWeight: .bold) : null),
+          Text(
+            label,
+            style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+          ),
           Text(
             '\$${value.toStringAsFixed(2)}',
             style: bold
-                ? const TextStyle(fontWeight: .bold, fontSize: 16)
+                ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
                 : null,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── PDF Preview Screen ────────────────────────────────────────────────────────
+class _PdfPreviewScreen extends StatelessWidget {
+  final Invoice invoice;
+  const _PdfPreviewScreen({required this.invoice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Invoice ${invoice.invoiceNumber}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: 'Print / Download',
+            onPressed: () async {
+              final bytes = await PdfService.buildPdfBytes(invoice);
+              await Printing.layoutPdf(onLayout: (_) async => bytes);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Share PDF',
+            onPressed: () async {
+              final bytes = await PdfService.buildPdfBytes(invoice);
+              await Printing.sharePdf(
+                bytes: bytes,
+                filename: 'invoice_${invoice.invoiceNumber}.pdf',
+              );
+            },
+          ),
+        ],
+      ),
+      body: PdfPreview(
+        // Renders the PDF inline — zoomable, scrollable
+        build: (format) => PdfService.buildPdfBytes(invoice),
+        allowPrinting: false, // handled by app bar button above
+        allowSharing: false, // handled by app bar button above
+        canChangeOrientation: false,
+        canChangePageFormat: false,
+        canDebug: false,
+        pdfFileName: 'invoice_${invoice.invoiceNumber}.pdf',
       ),
     );
   }

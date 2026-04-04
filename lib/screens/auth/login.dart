@@ -1,194 +1,351 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:new_invoice_generator/providers/auth.dart';
-import 'package:new_invoice_generator/screens/app_shell.dart';
-import 'package:new_invoice_generator/screens/auth/register.dart';
-import 'package:new_invoice_generator/widgets/auth_text_field.dart';
+import 'package:new_invoice_generator/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
-  bool _loading = false;
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const .symmetric(horizontal: 28),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const SizedBox(height: 40),
+            padding: const .all(24),
+            child: Column(
+              mainAxisAlignment: .center,
+              children: [
+                // Logo / title
+                Icon(Icons.receipt_long_rounded, size: 64, color: cs.primary),
+                const SizedBox(height: 12),
+                Text(
+                  'Invoice App',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(fontWeight: .bold),
+                ),
+                const SizedBox(height: 32),
 
-                  Text(
-                    "Welcome Back",
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: .bold,
-                    ),
+                // Tab bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    borderRadius: .circular(12),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Sign in to continue",
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withValues(
-                        alpha: 0.6,
-                      ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: .circular(10),
                     ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Card container
-                  Container(
-                    padding: const .all(24),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        AuthTextField(
-                          controller: _email,
-                          hint: "Email",
-                          icon: CupertinoIcons.mail,
-                          theme: theme,
-                        ),
-                        const SizedBox(height: 16),
-                        AuthTextField(
-                          controller: _password,
-                          hint: "Password",
-                          icon: CupertinoIcons.lock,
-                          obscure: true,
-                          theme: theme,
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              padding: const .symmetric(vertical: 16),
-                              backgroundColor: colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            onPressed: _loading
-                                ? null
-                                : () async {
-                                    if (!_formKey.currentState!.validate()) {
-                                      return;
-                                    }
-
-                                    setState(() => _loading = true);
-
-                                    try {
-                                      await ref
-                                          .read(authProvider.notifier)
-                                          .login(
-                                            _email.text.trim(),
-                                            _password.text.trim(),
-                                          );
-
-                                      if (context.mounted &&
-                                          ref.read(authProvider) != null) {
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => const AppShell(),
-                                          ),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(content: Text(e.toString())),
-                                        );
-                                      }
-                                    } finally {
-                                      setState(() => _loading = false);
-                                    }
-                                  },
-                            child: _loading
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      color: colorScheme.onPrimary,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    "Sign In",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: colorScheme.onPrimary,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  Row(
-                    mainAxisAlignment: .center,
-                    children: [
-                      Text(
-                        "Don’t have an account? ",
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          "Create one",
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: .w600,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      ),
+                    indicatorSize: .tab,
+                    labelColor: cs.onPrimary,
+                    unselectedLabelColor: cs.onSurface,
+                    dividerColor: Colors.transparent,
+                    tabs: const [
+                      Tab(text: 'Sign In'),
+                      Tab(text: 'Create Account'),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+
+                // Tab content
+                SizedBox(
+                  height: 340,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: const [_SignInForm(), _RegisterForm()],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Sign In ───────────────────────────────────────────────────────────────────
+class _SignInForm extends StatefulWidget {
+  const _SignInForm();
+
+  @override
+  State<_SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<_SignInForm> {
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  bool _obscurePassword = true;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await supabase.auth.signInWithPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+      );
+      // _AuthGate in main.dart handles navigation automatically
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: .stretch,
+      children: [
+        TextField(
+          controller: _emailCtrl,
+          keyboardType: .emailAddress,
+          textInputAction: .next,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            prefixIcon: Icon(Icons.email_outlined),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _passwordCtrl,
+          obscureText: _obscurePassword,
+          textInputAction: .done,
+          onSubmitted: (_) => _signIn(),
+          decoration: InputDecoration(
+            labelText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+              ),
+              tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _error!,
+            style: const TextStyle(color: Colors.red, fontSize: 13),
+          ),
+        ],
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _loading ? null : _signIn,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Sign In', style: TextStyle(fontSize: 16)),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Create Account ────────────────────────────────────────────────────────────
+class _RegisterForm extends StatefulWidget {
+  const _RegisterForm();
+
+  @override
+  State<_RegisterForm> createState() => _RegisterFormState();
+}
+
+class _RegisterFormState extends State<_RegisterForm> {
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _loading = false;
+  String? _error;
+  bool _success = false;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (_passwordCtrl.text != _confirmCtrl.text) {
+      setState(() => _error = 'Passwords do not match');
+      return;
+    }
+    if (_passwordCtrl.text.length < 6) {
+      setState(() => _error = 'Password must be at least 6 characters');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await supabase.auth.signUp(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+      );
+      if (mounted) setState(() => _success = true);
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_success) {
+      return Column(
+        mainAxisAlignment: .center,
+        children: [
+          const Icon(
+            Icons.mark_email_read_outlined,
+            size: 48,
+            color: Colors.green,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Account created!',
+            style: TextStyle(fontWeight: .bold, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Check your email to confirm your account,\nthen sign in.',
+            textAlign: .center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: .stretch,
+      children: [
+        TextField(
+          controller: _emailCtrl,
+          keyboardType: .emailAddress,
+          textInputAction: .next,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            prefixIcon: Icon(Icons.email_outlined),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _passwordCtrl,
+          obscureText: _obscurePassword,
+          textInputAction: .next,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+              ),
+              tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _confirmCtrl,
+          obscureText: _obscureConfirm,
+          textInputAction: .done,
+          onSubmitted: (_) => _register(),
+          decoration: InputDecoration(
+            labelText: 'Confirm password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirm
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+              ),
+              tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
+              onPressed: () =>
+                  setState(() => _obscureConfirm = !_obscureConfirm),
+            ),
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _error!,
+            style: const TextStyle(color: Colors.red, fontSize: 13),
+          ),
+        ],
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _loading ? null : _register,
+          style: ElevatedButton.styleFrom(minimumSize: const .fromHeight(48)),
+          child: _loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create Account', style: TextStyle(fontSize: 16)),
+        ),
+      ],
     );
   }
 }

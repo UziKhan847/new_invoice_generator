@@ -46,6 +46,9 @@ dependencies:
   open_filex: ^4.7.0
   custom_image_crop: ^0.1.1
   http: ^1.2.0
+  flutter_email_sender: ^6.0.3
+  permission_handler: ^11.3.1
+  image_cropper: ^12.1.1
 
 dev_dependencies:
   flutter_test:

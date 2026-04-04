@@ -6,9 +6,11 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfService {
-  static Future<void> generateInvoicePdf(Invoice invoice) async {
+  /// Returns raw PDF bytes — used by email, preview, and print
+  static Future<Uint8List> buildPdfBytes(Invoice invoice) async {
     final pdf = pw.Document();
 
+    // Fetch logo bytes if URL is available
     pw.MemoryImage? logoImage;
     if (invoice.companyLogoUrl != null && invoice.companyLogoUrl!.isNotEmpty) {
       try {
@@ -16,7 +18,9 @@ class PdfService {
         if (response.statusCode == 200) {
           logoImage = pw.MemoryImage(Uint8List.fromList(response.bodyBytes));
         }
-      } catch (_) {}
+      } catch (_) {
+        // Logo fetch failed — render without it
+      }
     }
 
     pdf.addPage(
@@ -370,7 +374,13 @@ class PdfService {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+    return pdf.save();
+  }
+
+  /// Print / layout the invoice PDF via the system print dialog
+  static Future<void> generateInvoicePdf(Invoice invoice) async {
+    final bytes = await buildPdfBytes(invoice);
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static pw.Widget _totalRow(

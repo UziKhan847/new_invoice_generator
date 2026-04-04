@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-        <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Network -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Storage — WRITE/READ for Android ≤9, MANAGE for Android 10+ -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <application
         android:label="new_invoice_generator"
@@ -30,7 +38,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- FileProvider for share_plus PDF sharing -->
+        <!-- FileProvider for share_plus and flutter_email_sender PDF attachment -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -41,19 +49,29 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- UCropActivity removed — no longer using image_cropper -->
-
     </application>
 
     <queries>
+        <!-- Flutter text processing -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
-        <!-- Needed for url_launcher mailto: links -->
+        <!-- url_launcher mailto: for email -->
         <intent>
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="mailto" />
         </intent>
+        <!-- flutter_email_sender — needed to query available email apps -->
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <!-- share_plus -->
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="application/pdf" />
+        </intent>
     </queries>
+
 </manifest>
