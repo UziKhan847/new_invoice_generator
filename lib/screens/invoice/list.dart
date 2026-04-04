@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
@@ -552,7 +551,7 @@ class _ActiveFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chips = <Widget>[];
-    if (filter.customerName != null)
+    if (filter.customerName != null) {
       chips.add(
         _Chip(
           label: 'Customer: ${filter.customerName}',
@@ -561,7 +560,8 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearCustomer: true)),
         ),
       );
-    if (filter.senderName != null)
+    }
+    if (filter.senderName != null) {
       chips.add(
         _Chip(
           label: 'Sender: ${filter.senderName}',
@@ -570,7 +570,8 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearSender: true)),
         ),
       );
-    if (filter.serviceName != null)
+    }
+    if (filter.serviceName != null) {
       chips.add(
         _Chip(
           label: 'Service: ${filter.serviceName}',
@@ -579,6 +580,7 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearService: true)),
         ),
       );
+    }
     if (filter.month != null || filter.year != null) {
       final label = [
         if (filter.month != null) _monthName(filter.month!),
@@ -593,7 +595,7 @@ class _ActiveFilterChips extends StatelessWidget {
         ),
       );
     }
-    if (filter.isPaid != null)
+    if (filter.isPaid != null) {
       chips.add(
         _Chip(
           label: filter.isPaid! ? 'Paid' : 'Unpaid',
@@ -602,6 +604,7 @@ class _ActiveFilterChips extends StatelessWidget {
               .update(filter.copyWith(clearStatus: true)),
         ),
       );
+    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -700,7 +703,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           const SizedBox(height: 16),
           customersAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (customers) => DropdownButtonFormField<String>(
               initialValue: _local.customerId,
               decoration: const InputDecoration(
@@ -736,7 +739,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           const SizedBox(height: 12),
           employeesAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (employees) => DropdownButtonFormField<String>(
               initialValue: _local.senderEmployeeId,
               decoration: const InputDecoration(
