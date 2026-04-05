@@ -84,10 +84,17 @@ class EmailService {
     } else {
       // Linux / desktop: open mailto link, then use printing package to
       // share/save the PDF since share_plus doesn't support Linux files
-      final mailUri = Uri.parse(
-        'mailto:$recipientEmail'
-        '?subject=${Uri.encodeComponent(subject)}'
-        '&body=${Uri.encodeComponent(body)}',
+      // Build mailto URI properly:
+      // - recipient goes directly (no encoding) between mailto: and ?
+      // - subject/body use Uri.encodeQueryComponent (not encodeComponent)
+      //   encodeComponent encodes spaces as %20, encodeQueryComponent uses +
+      //   Some mail apps (ProtonMail) reject %20 in query params
+      final mailUri = Uri(
+        scheme: 'mailto',
+        path: recipientEmail, // raw email, not encoded
+        query:
+            'subject=${Uri.encodeQueryComponent(subject)}'
+            '&body=${Uri.encodeQueryComponent(body)}',
       );
 
       if (await canLaunchUrl(mailUri)) {

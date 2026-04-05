@@ -225,39 +225,80 @@ class PdfService {
                   decoration: pw.BoxDecoration(
                     color: isEven ? PdfColors.white : PdfColors.grey50,
                   ),
-                  child: pw.Row(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Expanded(
-                        flex: 5,
-                        child: pw.Text(
-                          item.description,
-                          style: const pw.TextStyle(fontSize: 11),
-                        ),
+                      pw.Row(
+                        children: [
+                          pw.Expanded(
+                            flex: 5,
+                            child: pw.Text(
+                              item.description,
+                              style: const pw.TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          pw.Expanded(
+                            flex: 1,
+                            child: pw.Text(
+                              '${item.quantity}',
+                              textAlign: pw.TextAlign.center,
+                              style: const pw.TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          pw.Expanded(
+                            flex: 2,
+                            child: pw.Text(
+                              '\$${item.unitPrice.toStringAsFixed(2)}',
+                              textAlign: pw.TextAlign.right,
+                              style: const pw.TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          pw.Expanded(
+                            flex: 2,
+                            child: pw.Text(
+                              '\$${item.total.toStringAsFixed(2)}',
+                              textAlign: pw.TextAlign.right,
+                              style: pw.TextStyle(
+                                fontSize: 11,
+                                fontWeight: item.hasDiscount
+                                    ? pw.FontWeight.bold
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      pw.Expanded(
-                        flex: 1,
-                        child: pw.Text(
-                          '${item.quantity}',
-                          textAlign: pw.TextAlign.center,
-                          style: const pw.TextStyle(fontSize: 11),
+                      // Discount line — only shown when a discount exists
+                      if (item.hasDiscount)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2),
+                          child: pw.Row(
+                            children: [
+                              pw.Expanded(
+                                flex: 5,
+                                child: pw.Text(
+                                  '  Discount: ${item.discountLabel}  (−\$${item.discountAmount.toStringAsFixed(2)})',
+                                  style: const pw.TextStyle(
+                                    fontSize: 9,
+                                    color: PdfColors.green700,
+                                  ),
+                                ),
+                              ),
+                              pw.Expanded(
+                                flex: 5,
+                                child: pw.Text(
+                                  'Was: \$${item.subtotal.toStringAsFixed(2)}',
+                                  textAlign: pw.TextAlign.right,
+                                  style: const pw.TextStyle(
+                                    fontSize: 9,
+                                    color: PdfColors.grey500,
+                                    decoration: pw.TextDecoration.lineThrough,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      pw.Expanded(
-                        flex: 2,
-                        child: pw.Text(
-                          '\$${item.unitPrice.toStringAsFixed(2)}',
-                          textAlign: pw.TextAlign.right,
-                          style: const pw.TextStyle(fontSize: 11),
-                        ),
-                      ),
-                      pw.Expanded(
-                        flex: 2,
-                        child: pw.Text(
-                          '\$${item.total.toStringAsFixed(2)}',
-                          textAlign: pw.TextAlign.right,
-                          style: const pw.TextStyle(fontSize: 11),
-                        ),
-                      ),
                     ],
                   ),
                 );

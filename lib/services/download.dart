@@ -29,8 +29,8 @@ class DownloadService {
         '${invoice.customerName}_${invoice.invoiceNumber}_${day}_${monthShort}_${date.year}'
             .replaceAll(RegExp(r'[^\w]'), '_');
 
-    if (Platform.isAndroid) {
-      if (context.mounted) {
+    if (context.mounted) {
+      if (Platform.isAndroid) {
         await _saveAndroid(
           context: context,
           bytes: bytes,
@@ -39,9 +39,7 @@ class DownloadService {
           fileName: fileName,
           invoice: invoice,
         );
-      }
-    } else if (Platform.isIOS) {
-      if (context.mounted) {
+      } else if (Platform.isIOS) {
         await _saveIos(
           context: context,
           bytes: bytes,
@@ -49,10 +47,8 @@ class DownloadService {
           month: month,
           fileName: fileName,
         );
-      }
-    } else {
-      // Linux / desktop — use printing share dialog
-      if (context.mounted) {
+      } else {
+        // Linux / desktop — use printing share dialog
         await _saveDesktop(context: context, bytes: bytes, fileName: fileName);
       }
     }
@@ -82,28 +78,25 @@ class DownloadService {
       await File(filePath).writeAsBytes(bytes);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Saved to Invoices/$year/$month/'),
-            action: SnackBarAction(
-              label: 'Share',
-              onPressed: () async {
-                await SharePlus.instance.share(
-                  ShareParams(
-                    files: [XFile(filePath, mimeType: 'application/pdf')],
-                    subject: 'Invoice ${invoice.invoiceNumber}',
-                  ),
-                );
-              },
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Saved: Invoices/$year/$month/$fileName.pdf'),
+              duration: const Duration(seconds: 4),
             ),
-          ),
-        );
+          );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
       }
     }
   }
@@ -132,9 +125,14 @@ class DownloadService {
       );
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
       }
     }
   }
@@ -158,15 +156,25 @@ class DownloadService {
       await File(filePath).writeAsBytes(bytes);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved to Documents/Invoices/$fileName.pdf')),
-        );
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Saved to Documents/Invoices/$fileName.pdf'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
       }
     }
   }
@@ -188,11 +196,14 @@ class DownloadService {
     if (result.isGranted) return true;
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Storage permission denied. Cannot save file.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Storage permission denied. Cannot save file.'),
+            duration: Duration(seconds: 4),
+          ),
+        );
     }
     return false;
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/screens/customers.dart';
 import 'package:new_invoice_generator/screens/dashboard.dart';
-import 'package:new_invoice_generator/screens/home.dart';
+import 'package:new_invoice_generator/screens/home/home.dart';
 import 'package:new_invoice_generator/screens/invoice/list.dart';
 import 'package:new_invoice_generator/screens/more.dart';
 
