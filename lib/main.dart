@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/auth_gate.dart';
 import 'package:new_invoice_generator/keys.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
-import 'package:new_invoice_generator/screens/app_shell.dart';
-import 'package:new_invoice_generator/screens/auth/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -27,43 +26,7 @@ class MyApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const _AuthGate(),
-    );
-  }
-}
-
-class _AuthGate extends StatefulWidget {
-  const _AuthGate();
-
-  @override
-  State<_AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<_AuthGate> {
-  late final Stream<AuthState> _authStream;
-
-  @override
-  void initState() {
-    super.initState();
-    _authStream = supabase.auth.onAuthStateChange;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: _authStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == .waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final session = snapshot.data?.session ?? supabase.auth.currentSession;
-        if (session != null) {
-          return const AppShell();
-        }
-        return const LoginScreen();
-      },
+      home: const AuthGate(),
     );
   }
 }

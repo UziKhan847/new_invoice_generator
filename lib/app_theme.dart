@@ -8,15 +8,11 @@ class AppTheme {
       colorScheme: .fromSeed(seedColor: Colors.blue),
       scaffoldBackgroundColor: Colors.grey.shade50,
       inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: .all(.circular(16)),
-        ),
+        border: OutlineInputBorder(borderRadius: .all(.circular(16))),
       ),
       cardTheme: const CardThemeData(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: .all(.circular(20)),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: .all(.circular(20))),
       ),
     );
   }
@@ -25,10 +21,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: .dark,
-      colorScheme: .fromSeed(
-        seedColor: Colors.blue,
-        brightness: .dark,
-      ),
+      colorScheme: .fromSeed(seedColor: Colors.blue, brightness: .dark),
     );
   }
 }
