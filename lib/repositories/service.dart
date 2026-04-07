@@ -7,7 +7,7 @@ class ServiceRepository {
         .from('services')
         .select()
         .eq('company_id', companyId)
-        .order('name');
+        .order('name', ascending: true);
     return response.map<Service>((j) => Service.fromJson(j)).toList();
   }
 

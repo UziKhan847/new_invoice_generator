@@ -3,7 +3,7 @@ import 'package:new_invoice_generator/screens/customers.dart';
 import 'package:new_invoice_generator/screens/dashboard.dart';
 import 'package:new_invoice_generator/screens/home/home.dart';
 import 'package:new_invoice_generator/screens/invoice/list.dart';
-import 'package:new_invoice_generator/screens/more.dart';
+import 'package:new_invoice_generator/screens/more/more.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -20,7 +20,7 @@ class _AppShellState extends State<AppShell> {
     InvoiceListScreen(),
     CustomersScreen(),
     DashboardScreen(),
-    MoreScreen(), // Services, Recurring, Company Profile, Settings
+    MoreScreen(),
   ];
 
   @override

@@ -22,7 +22,10 @@ final filteredInvoicesProvider = Provider<AsyncValue<List<Invoice>>>((ref) {
   final filter = ref.watch(invoiceFilterProvider);
 
   return invoicesAsync.whenData((invoices) {
-    var result = invoices.where((inv) {
+    // Sort newest first, then filter
+    final sorted = [...invoices]
+      ..sort((a, b) => b.issueDate.compareTo(a.issueDate));
+    var result = sorted.where((inv) {
       if (filter.customerId != null && inv.customerId != filter.customerId) {
         return false;
       }

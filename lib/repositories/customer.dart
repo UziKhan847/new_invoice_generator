@@ -6,7 +6,8 @@ class CustomerRepository {
     return await supabase
         .from('customers')
         .select()
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .order('name', ascending: true);
   }
 
   Future<void> addCustomer(

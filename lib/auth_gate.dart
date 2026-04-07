@@ -1,26 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/main.dart';
+import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/providers/employee.dart';
+import 'package:new_invoice_generator/providers/home_analytics.dart';
+import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice_filter.dart';
+import 'package:new_invoice_generator/providers/recurring_invoice.dart';
+import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/app_shell.dart';
 import 'package:new_invoice_generator/screens/auth/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AuthGate extends StatefulWidget {
+class AuthGate extends ConsumerStatefulWidget {
   const AuthGate({super.key});
 
   @override
-  State<AuthGate> createState() => _AuthGateState();
+  ConsumerState<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends State<AuthGate> {
+class _AuthGateState extends ConsumerState<AuthGate> {
   late final Stream<AuthState> _authStream;
-  String? _currentUserId;
+  String? _lastUserId;
 
   @override
   void initState() {
     super.initState();
     _authStream = supabase.auth.onAuthStateChange;
-    _currentUserId = supabase.auth.currentSession?.user.id;
+    _lastUserId = supabase.auth.currentSession?.user.id;
+  }
+
+  void _invalidateAll() {
+    ref.invalidate(companyProvider);
+    ref.invalidate(invoiceProvider);
+    ref.invalidate(invoiceFilterProvider);
+    ref.invalidate(customerProvider);
+    ref.invalidate(employeeProvider);
+    ref.invalidate(serviceProvider);
+    ref.invalidate(recurringInvoiceProvider);
+    ref.invalidate(homeAnalyticsProvider);
   }
 
   @override
@@ -28,28 +47,28 @@ class _AuthGateState extends State<AuthGate> {
     return StreamBuilder<AuthState>(
       stream: _authStream,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        final session = snapshot.data?.session ?? supabase.auth.currentSession;
+        final userId = session?.user.id;
+
+        // Detect user change (login, logout, switch account)
+        if (userId != _lastUserId) {
+          _lastUserId = userId;
+          // Synchronously invalidate before the next frame renders
+          _invalidateAll();
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            session == null) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        final session = snapshot.data?.session ?? supabase.auth.currentSession;
-        final userId = session?.user.id;
+        if (session == null) return const LoginScreen();
 
-        // Update tracked user id when it changes
-        if (userId != _currentUserId) {
-          _currentUserId = userId;
-        }
-
-        if (session == null) {
-          return const LoginScreen();
-        }
-
-        // Key on userId forces Flutter to DESTROY and RECREATE the entire
-        // ProviderScope subtree when the user changes. This guarantees all
-        // providers start completely fresh — no stale data from previous user.
-        return ProviderScope(key: ValueKey(userId), child: const AppShell());
+        // ValueKey forces AppShell widget tree to be fully destroyed and
+        // recreated when the user changes, so no stale widget state remains.
+        return AppShell(key: ValueKey(userId));
       },
     );
   }

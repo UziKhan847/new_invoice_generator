@@ -1,11 +1,12 @@
+
 class InvoiceFilter {
   final String? customerId;
   final String? customerName;
   final String? senderEmployeeId;
   final String? senderName;
-  final String? serviceId; // filter by item description matching service name
+  final String? serviceId;   // filter by item description matching service name
   final String? serviceName;
-  final int? month; // 1-12
+  final int? month;  // 1-12
   final int? year;
   final bool? isPaid;
 
@@ -49,9 +50,7 @@ class InvoiceFilter {
     return InvoiceFilter(
       customerId: clearCustomer ? null : (customerId ?? this.customerId),
       customerName: clearCustomer ? null : (customerName ?? this.customerName),
-      senderEmployeeId: clearSender
-          ? null
-          : (senderEmployeeId ?? this.senderEmployeeId),
+      senderEmployeeId: clearSender ? null : (senderEmployeeId ?? this.senderEmployeeId),
       senderName: clearSender ? null : (senderName ?? this.senderName),
       serviceId: clearService ? null : (serviceId ?? this.serviceId),
       serviceName: clearService ? null : (serviceName ?? this.serviceName),
@@ -63,3 +62,4 @@ class InvoiceFilter {
 
   InvoiceFilter clear() => const InvoiceFilter();
 }
+

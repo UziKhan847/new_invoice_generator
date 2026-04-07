@@ -7,7 +7,7 @@ class EmployeeRepository {
         .from('employees')
         .select()
         .eq('company_id', companyId)
-        .order('name');
+        .order('name', ascending: true);
     return response.map<Employee>((j) => Employee.fromJson(j)).toList();
   }
 
@@ -16,12 +16,15 @@ class EmployeeRepository {
   }
 
   Future<void> update(Employee e) async {
-    await supabase.from('employees').update({
-      'name': e.name,
-      'role': e.role,
-      'email': e.email,
-      'phone': e.phone,
-    }).eq('id', e.id);
+    await supabase
+        .from('employees')
+        .update({
+          'name': e.name,
+          'role': e.role,
+          'email': e.email,
+          'phone': e.phone,
+        })
+        .eq('id', e.id);
   }
 
   Future<void> delete(String id) async {

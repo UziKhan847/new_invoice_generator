@@ -10,7 +10,7 @@ class InvoiceRepository {
           '*, invoice_items(*), customers(email), employees!invoices_sender_employee_id_fkey(name, role, email)',
         )
         .eq('company_id', companyId)
-        .order('created_at', ascending: false);
+        .order('issue_date', ascending: false);
     return response.map<Invoice>((json) => Invoice.fromJson(json)).toList();
   }
 
