@@ -153,6 +153,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                     data: (customers) => DropdownButtonFormField<String>(
                       initialValue: _filterCustomerId,
                       isDense: true,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                           labelText: 'Customer',
                           isDense: true,
@@ -163,7 +164,8 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                         ...customers.map((c) => DropdownMenuItem(
                             value: c.id,
                             child: Text(c.name,
-                                overflow: TextOverflow.ellipsis))),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1))),
                       ],
                       onChanged: (v) => setState(() {
                         _filterCustomerId = v;
@@ -187,6 +189,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                         : DropdownButtonFormField<String>(
                             initialValue: _filterSenderId,
                             isDense: true,
+                            isExpanded: true,
                             decoration: const InputDecoration(
                                 labelText: 'Sender',
                                 isDense: true,
@@ -198,7 +201,8 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                               ...employees.map((e) => DropdownMenuItem(
                                   value: e.id,
                                   child: Text(e.name,
-                                      overflow: TextOverflow.ellipsis))),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1))),
                             ],
                             onChanged: (v) => setState(() {
                               _filterSenderId = v;

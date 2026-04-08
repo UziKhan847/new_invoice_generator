@@ -381,18 +381,16 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                           senderRole: sender?.role,
                           senderEmail: sender?.email,
                         );
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invoice generated!')),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invoice generated!')),
+                    );
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: \$e')));
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: \$e')));
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }
@@ -529,11 +527,10 @@ class _EditRecurringDialogState extends ConsumerState<_EditRecurringDialog> {
                         );
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }
@@ -738,11 +735,10 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
                         );
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }

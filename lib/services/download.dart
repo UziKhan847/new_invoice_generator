@@ -29,28 +29,27 @@ class DownloadService {
         '${invoice.customerName}_${invoice.invoiceNumber}_${day}_${monthShort}_${date.year}'
             .replaceAll(RegExp(r'[^\w]'), '_');
 
-    if (context.mounted) {
-      if (Platform.isAndroid) {
-        await _saveAndroid(
-          context: context,
-          bytes: bytes,
-          year: year,
-          month: month,
-          fileName: fileName,
-          invoice: invoice,
-        );
-      } else if (Platform.isIOS) {
-        await _saveIos(
-          context: context,
-          bytes: bytes,
-          year: year,
-          month: month,
-          fileName: fileName,
-        );
-      } else {
-        // Linux / desktop — use printing share dialog
-        await _saveDesktop(context: context, bytes: bytes, fileName: fileName);
-      }
+    if (!context.mounted) return;
+    if (Platform.isAndroid) {
+      await _saveAndroid(
+        context: context,
+        bytes: bytes,
+        year: year,
+        month: month,
+        fileName: fileName,
+        invoice: invoice,
+      );
+    } else if (Platform.isIOS) {
+      await _saveIos(
+        context: context,
+        bytes: bytes,
+        year: year,
+        month: month,
+        fileName: fileName,
+      );
+    } else {
+      // Linux / desktop — use printing share dialog
+      await _saveDesktop(context: context, bytes: bytes, fileName: fileName);
     }
   }
 
@@ -77,27 +76,25 @@ class DownloadService {
       final filePath = '${dir.path}/$fileName.pdf';
       await File(filePath).writeAsBytes(bytes);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Saved: Invoices/$year/$month/$fileName.pdf'),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Saved: Invoices/$year/$month/$fileName.pdf'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Save failed: $e'),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
     }
   }
 
@@ -124,16 +121,15 @@ class DownloadService {
         ),
       );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Save failed: $e'),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
     }
   }
 
@@ -155,27 +151,25 @@ class DownloadService {
       final filePath = '${dir.path}/$fileName.pdf';
       await File(filePath).writeAsBytes(bytes);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Saved to Documents/Invoices/$fileName.pdf'),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Saved to Documents/Invoices/$fileName.pdf'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Save failed: $e'),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
     }
   }
 

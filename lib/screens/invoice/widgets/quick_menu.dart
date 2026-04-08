@@ -5,6 +5,7 @@ import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/quick_pdf_preview.dart';
 import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/email.dart';
+import 'package:new_invoice_generator/utils/with_loading_overlay.dart';
 
 enum _Action { markPaid, email, download, preview }
 
@@ -35,39 +36,52 @@ class InvoiceQuickMenu extends ConsumerWidget {
                 title: const Text('Mark as paid?'),
                 actions: [
                   TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel')),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green),
+                      backgroundColor: Colors.green,
+                    ),
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Mark Paid',
-                        style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Mark Paid',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
             );
             if (confirm == true && context.mounted) {
-              await ref
-                  .read(invoiceProvider.notifier)
-                  .markPaid(invoice.id!);
+              await ref.read(invoiceProvider.notifier).markPaid(invoice.id!);
             }
 
           case _Action.email:
             if (context.mounted) _showEmailDialog(context);
 
           case _Action.download:
-            final logoUrl = await getLogoUrl();
-            if (context.mounted) {
-              await DownloadService.downloadInvoice(
-                context: context,
-                invoice: invoice,
-                companyLogoUrl: logoUrl,
-              );
-            }
+            if (!context.mounted) return;
+            await withLoadingOverlay(
+              context,
+              message: 'Saving PDF…',
+              task: () async {
+                final logoUrl = await getLogoUrl();
+                if (!context.mounted) return;
+                await DownloadService.downloadInvoice(
+                  context: context,
+                  invoice: invoice,
+                  companyLogoUrl: logoUrl,
+                );
+              },
+            );
 
           case _Action.preview:
-            final logoUrl = await getLogoUrl();
+            if (!context.mounted) return;
+            final logoUrl = await withLoadingOverlay(
+              context,
+              message: 'Generating preview…',
+              task: () => getLogoUrl(),
+            );
             final inv = logoUrl != null
                 ? invoice.copyWith(companyLogoUrl: logoUrl)
                 : invoice;
@@ -75,7 +89,8 @@ class InvoiceQuickMenu extends ConsumerWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => QuickPdfPreview(invoice: inv)),
+                  builder: (_) => QuickPdfPreview(invoice: inv),
+                ),
               );
             }
         }
@@ -85,9 +100,10 @@ class InvoiceQuickMenu extends ConsumerWidget {
           const PopupMenuItem(
             value: _Action.markPaid,
             child: _MenuItem(
-                icon: Icons.check_circle_outline,
-                label: 'Mark as Paid',
-                color: Colors.green),
+              icon: Icons.check_circle_outline,
+              label: 'Mark as Paid',
+              color: Colors.green,
+            ),
           ),
         const PopupMenuItem(
           value: _Action.email,
@@ -100,18 +116,19 @@ class InvoiceQuickMenu extends ConsumerWidget {
         const PopupMenuItem(
           value: _Action.preview,
           child: _MenuItem(
-              icon: Icons.visibility_outlined, label: 'Preview PDF'),
+            icon: Icons.visibility_outlined,
+            label: 'Preview PDF',
+          ),
         ),
       ],
     );
   }
 
   void _showEmailDialog(BuildContext context) {
-    final emailCtrl =
-        TextEditingController(text: invoice.customerEmail ?? '');
+    final emailCtrl = TextEditingController(text: invoice.customerEmail ?? '');
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text('Email ${invoice.invoiceNumber}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -121,40 +138,53 @@ class InvoiceQuickMenu extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 14),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 14,
+                    ),
                     const SizedBox(width: 6),
-                    Text('Auto-filled from customer record',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green.shade700)),
+                    Text(
+                      'Auto-filled from customer',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
                   ],
                 ),
               ),
             TextField(
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration:
-                  const InputDecoration(labelText: 'Recipient email'),
+              decoration: const InputDecoration(labelText: 'Recipient email'),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
-              final logoUrl = await getLogoUrl();
-              if (context.mounted) {
-                await EmailService.emailInvoice(
-                  context: context,
-                  invoice: invoice,
-                  recipientEmail: emailCtrl.text.trim(),
-                  companyLogoUrl: logoUrl,
-                );
-              }
+              Navigator.pop(ctx);
+              final email = emailCtrl.text.trim();
+              if (!context.mounted) return;
+              await withLoadingOverlay(
+                context,
+                message: 'Preparing email…',
+                task: () async {
+                  final logoUrl = await getLogoUrl();
+                  if (!context.mounted) return;
+                  await EmailService.emailInvoice(
+                    context: context,
+                    invoice: invoice,
+                    recipientEmail: email,
+                    companyLogoUrl: logoUrl,
+                  );
+                },
+              );
             },
             child: const Text('Send'),
           ),
@@ -168,8 +198,7 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color? color;
-  const _MenuItem(
-      {required this.icon, required this.label, this.color});
+  const _MenuItem({required this.icon, required this.label, this.color});
 
   @override
   Widget build(BuildContext context) {

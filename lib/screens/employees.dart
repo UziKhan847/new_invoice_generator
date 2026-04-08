@@ -216,11 +216,10 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
                     }
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }

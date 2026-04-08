@@ -93,19 +93,17 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                                 .eq('id', company['id']);
                             // Refresh provider
                             ref.invalidate(companyProvider);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Company profile saved'),
-                                ),
-                              );
-                            }
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Company profile saved'),
+                              ),
+                            );
                           } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
                           } finally {
                             if (mounted) setState(() => _saving = false);
                           }

@@ -7,6 +7,7 @@ import 'package:new_invoice_generator/services/email.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/storage.dart';
+import 'package:new_invoice_generator/utils/with_loading_overlay.dart';
 import 'package:printing/printing.dart';
 import 'package:new_invoice_generator/services/receipt_pdf.dart';
 
@@ -47,9 +48,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     logoUrl = await StorageService.getFreshLogoUrl(storagePath);
                   }
                   logoUrl ??= company['logo_url'] as String?;
-                  if (context.mounted) {
-                    _showEmailDialog(context, invoice, logoUrl: logoUrl);
-                  }
+                  if (!context.mounted) return;
+                  _showEmailDialog(context, invoice, logoUrl: logoUrl);
                 },
               ),
               IconButton(
@@ -66,14 +66,13 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   final inv = logoUrl != null
                       ? invoice.copyWith(companyLogoUrl: logoUrl)
                       : invoice;
-                  if (context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => _PdfPreviewScreen(invoice: inv),
-                      ),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => _PdfPreviewScreen(invoice: inv),
+                    ),
+                  );
                 },
               ),
               IconButton(
@@ -87,13 +86,20 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     logoUrl = await StorageService.getFreshLogoUrl(storagePath);
                   }
                   logoUrl ??= company['logo_url'] as String?;
-                  if (context.mounted) {
-                    await DownloadService.downloadInvoice(
-                      context: context,
-                      invoice: invoice,
-                      companyLogoUrl: logoUrl,
-                    );
-                  }
+                  if (!context.mounted) return;
+                  await withLoadingOverlay(
+                    context,
+                    message: 'Saving PDF…',
+                    task: () async {
+                      if (context.mounted) {
+                        await DownloadService.downloadInvoice(
+                          context: context,
+                          invoice: invoice,
+                          companyLogoUrl: logoUrl,
+                        );
+                      }
+                    },
+                  );
                 },
               ),
               IconButton(
@@ -107,10 +113,17 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     logoUrl = await StorageService.getFreshLogoUrl(storagePath);
                   }
                   logoUrl ??= company['logo_url'] as String?;
-                  await PdfService.generateInvoicePdf(
-                    logoUrl != null
-                        ? invoice.copyWith(companyLogoUrl: logoUrl)
-                        : invoice,
+                  if (!context.mounted) return;
+                  await withLoadingOverlay(
+                    context,
+                    message: 'Please wait…',
+                    task: () async {
+                      await PdfService.generateInvoicePdf(
+                        logoUrl != null
+                            ? invoice.copyWith(companyLogoUrl: logoUrl)
+                            : invoice,
+                      );
+                    },
                   );
                 },
               ),
@@ -456,11 +469,20 @@ class InvoiceDetailScreen extends ConsumerWidget {
             onPressed: () async {
               if (emailCtrl.text.trim().isEmpty) return;
               Navigator.pop(context);
-              await EmailService.emailInvoice(
-                context: context,
-                invoice: invoice,
-                recipientEmail: emailCtrl.text.trim(),
-                companyLogoUrl: logoUrl,
+              if (!context.mounted) return;
+              await withLoadingOverlay(
+                context,
+                message: 'Preparing email…',
+                task: () async {
+                  if (context.mounted) {
+                    await EmailService.emailInvoice(
+                      context: context,
+                      invoice: invoice,
+                      recipientEmail: emailCtrl.text.trim(),
+                      companyLogoUrl: logoUrl,
+                    );
+                  }
+                },
               );
             },
           ),

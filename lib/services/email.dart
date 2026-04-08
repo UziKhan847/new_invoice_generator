@@ -46,17 +46,15 @@ class EmailService {
           isHTML: false,
         );
         await FlutterEmailSender.send(email);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Email sent successfully!')),
-          );
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email sent successfully!')),
+        );
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error sending email: $e')));
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sending email: $e')));
       }
     } else if (Platform.isIOS) {
       // iOS: same flutter_email_sender approach works
@@ -69,17 +67,15 @@ class EmailService {
           isHTML: false,
         );
         await FlutterEmailSender.send(email);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Email sent successfully!')),
-          );
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email sent successfully!')),
+        );
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error sending email: $e')));
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sending email: $e')));
       }
     } else {
       // Linux / desktop: open mailto link, then use printing package to
