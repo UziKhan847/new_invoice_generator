@@ -19,7 +19,7 @@ class EmployeesScreen extends ConsumerWidget {
           if (employees.isEmpty) {
             return Center(
               child: Column(
-                mainAxisAlignment: .center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
                     Icons.badge_outlined,
@@ -41,7 +41,7 @@ class EmployeesScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const .all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: employees.length,
             itemBuilder: (context, i) {
               final e = employees[i];
@@ -50,13 +50,13 @@ class EmployeesScreen extends ConsumerWidget {
                   leading: CircleAvatar(child: Text(e.name[0].toUpperCase())),
                   title: Text(
                     e.name,
-                    style: const TextStyle(fontWeight: .w600),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
                     '${e.role}${e.email.isNotEmpty ? ' · ${e.email}' : ''}',
                   ),
                   trailing: Row(
-                    mainAxisSize: .min,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit_outlined),
@@ -160,7 +160,7 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
       title: Text(isEdit ? 'Edit Employee' : 'Add Employee'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: .min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _name,

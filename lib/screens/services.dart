@@ -16,100 +16,72 @@ class ServicesScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: \$e')),
         data: (services) => services.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: .center,
-                  children: [
-                    const Icon(
-                      Icons.design_services_outlined,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No services yet',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Tap + to add a service',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const .all(12),
-                itemCount: services.length,
-                itemBuilder: (context, i) {
-                  final s = services[i];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        child: Icon(
-                          Icons.design_services,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          size: 18,
-                        ),
-                      ),
-                      title: Text(
-                        s.name,
-                        style: const TextStyle(fontWeight: .w600),
-                      ),
-                      subtitle:
-                          s.description != null && s.description!.isNotEmpty
-                          ? Text(s.description!)
-                          : null,
-                      trailing: Row(
-                        mainAxisSize: .min,
-                        children: [
-                          Column(
-                            mainAxisAlignment: .center,
-                            crossAxisAlignment: .end,
-                            children: [
-                              Text(
-                                '\$${s.unitPrice.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: .bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              if (s.rateType != 'fixed')
-                                Text(
-                                  s.rateLabel,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                            ),
-                            onPressed: () => ref
-                                .read(serviceProvider.notifier)
-                                .deleteService(s.id),
-                          ),
-                        ],
-                      ),
-                      onTap: () => showDialog(
-                        context: context,
-                        builder: (_) => _ServiceDialog(service: s),
-                      ),
-                    ),
-                  );
-                },
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.design_services_outlined, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text('No services yet', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  const Text('Tap + to add a service',
+                      style: TextStyle(color: Colors.grey)),
+                ],
               ),
-      ), // end .when()
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+              itemCount: services.length,
+              itemBuilder: (context, i) {
+                final s = services[i];
+                return Card(
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(Icons.design_services,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          size: 18),
+                    ),
+                    title: Text(s.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: s.description != null && s.description!.isNotEmpty
+                        ? Text(s.description!)
+                        : null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('\$${s.unitPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14)),
+                            if (s.rateType != 'fixed')
+                              Text(s.rateLabel,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => ref
+                              .read(serviceProvider.notifier)
+                              .deleteService(s.id),
+                        ),
+                      ],
+                    ),
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => _ServiceDialog(service: s),
+                    ),
+                  ),
+                );
+              },
+            ),
+      ),  // end .when()
       floatingActionButton: FloatingActionButton(
         onPressed: () => showDialog(
           context: context,
@@ -136,31 +108,28 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
   late String _rateType;
 
   static const _rateOptions = [
-    ('fixed', 'Fixed'),
-    ('hourly', 'Hourly'),
-    ('daily', 'Daily'),
-    ('weekly', 'Weekly'),
+    ('fixed',    'Fixed'),
+    ('hourly',   'Hourly'),
+    ('daily',    'Daily'),
+    ('weekly',   'Weekly'),
     ('4_weekly', 'Every 4 Weeks'),
-    ('monthly', 'Monthly'),
-    ('yearly', 'Yearly'),
+    ('monthly',  'Monthly'),
+    ('yearly',   'Yearly'),
   ];
 
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.service?.name ?? '');
-    _descCtrl = TextEditingController(text: widget.service?.description ?? '');
+    _nameCtrl  = TextEditingController(text: widget.service?.name ?? '');
+    _descCtrl  = TextEditingController(text: widget.service?.description ?? '');
     _priceCtrl = TextEditingController(
-      text: widget.service?.unitPrice.toStringAsFixed(2) ?? '',
-    );
-    _rateType = widget.service?.rateType ?? 'fixed';
+        text: widget.service?.unitPrice.toStringAsFixed(2) ?? '');
+    _rateType  = widget.service?.rateType ?? 'fixed';
   }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _descCtrl.dispose();
-    _priceCtrl.dispose();
+    _nameCtrl.dispose(); _descCtrl.dispose(); _priceCtrl.dispose();
     super.dispose();
   }
 
@@ -171,7 +140,7 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
       title: Text(isEdit ? 'Edit Service' : 'Add Service'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: .min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _nameCtrl,
@@ -180,9 +149,8 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
             const SizedBox(height: 10),
             TextField(
               controller: _descCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-              ),
+              decoration:
+                  const InputDecoration(labelText: 'Description (optional)'),
             ),
             const SizedBox(height: 10),
             Row(
@@ -191,7 +159,8 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
                   flex: 2,
                   child: TextField(
                     controller: _priceCtrl,
-                    keyboardType: const .numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Price (\$)'),
                   ),
                 ),
@@ -202,10 +171,8 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
                     initialValue: _rateType,
                     decoration: const InputDecoration(labelText: 'Rate'),
                     items: _rateOptions
-                        .map(
-                          (o) =>
-                              DropdownMenuItem(value: o.$1, child: Text(o.$2)),
-                        )
+                        .map((o) => DropdownMenuItem(
+                            value: o.$1, child: Text(o.$2)))
                         .toList(),
                     onChanged: (v) => setState(() => _rateType = v!),
                   ),
@@ -217,15 +184,13 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         ElevatedButton(
           onPressed: () {
-            if (_nameCtrl.text.trim().isEmpty || _priceCtrl.text.isEmpty) {
-              return;
-            }
+            if (_nameCtrl.text.trim().isEmpty || _priceCtrl.text.isEmpty) return;
             final s = Service(
+              // For new services, id is ignored — Supabase generates UUID via toInsertMap
               id: widget.service?.id ?? '',
               name: _nameCtrl.text.trim(),
               description: _descCtrl.text.trim().isEmpty

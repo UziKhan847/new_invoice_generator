@@ -24,7 +24,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
           if (items.isEmpty) {
             return Center(
               child: Column(
-                mainAxisAlignment: .center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.repeat, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
@@ -42,7 +42,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const .all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: items.length,
             itemBuilder: (context, i) => _RecurringTile(r: items[i]),
           );
@@ -67,21 +67,24 @@ class _RecurringTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
-      margin: const .only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
-        padding: const .all(14),
+        padding: const EdgeInsets.all(14),
         child: Column(
-          crossAxisAlignment: .start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: .start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         r.label,
-                        style: const TextStyle(fontWeight: .bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       if (r.customerName != null)
                         Text(
@@ -105,7 +108,10 @@ class _RecurringTile extends ConsumerWidget {
                   ),
                 ),
                 Container(
-                  padding: const .symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
@@ -246,8 +252,8 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
       title: const Text('Generate Invoice'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .start,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Adjust before generating:',
@@ -261,7 +267,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
             const SizedBox(height: 10),
             // Rate + units row
             Row(
-              crossAxisAlignment: .end,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
                   child: TextField(
@@ -277,7 +283,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                   ),
                 ),
                 const Padding(
-                  padding: .only(bottom: 18, left: 8, right: 8),
+                  padding: EdgeInsets.only(bottom: 18, left: 8, right: 8),
                   child: Text('×', style: TextStyle(fontSize: 18)),
                 ),
                 Expanded(
@@ -298,7 +304,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
             const SizedBox(height: 12),
             // Live total
             Container(
-              padding: const .symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
@@ -306,12 +312,18 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
-                mainAxisAlignment: .spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total', style: TextStyle(fontWeight: .w600)),
+                  const Text(
+                    'Total',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   Text(
                     '\$${total.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: .bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -364,6 +376,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                     final units = double.tryParse(_unitsCtrl.text) ?? 1.0;
                     final rate =
                         double.tryParse(_rateCtrl.text) ?? widget.r.price;
+                    final _ = widget.r.frequencyUnitLabel;
                     // Build a descriptive label e.g. "Quran Lessons (8 hrs)"
                     final label = units == 1.0
                         ? _labelCtrl.text.trim()
@@ -450,7 +463,7 @@ class _EditRecurringDialogState extends ConsumerState<_EditRecurringDialog> {
       title: const Text('Edit Recurring Invoice'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: .min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _labelCtrl,
@@ -584,7 +597,7 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
       title: const Text('New Recurring Invoice'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: .min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _labelCtrl,
@@ -736,6 +749,7 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
                     if (!context.mounted) return;
+
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(SnackBar(content: Text('Error: $e')));
