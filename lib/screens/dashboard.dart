@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/providers/home_analytics.dart';
-import 'package:new_invoice_generator/screens/charts.dart';
+import 'package:new_invoice_generator/screens/charts/screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});

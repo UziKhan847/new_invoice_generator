@@ -42,7 +42,12 @@ class RecurringInvoicesScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              12,
+              12,
+              MediaQuery.paddingOf(context).bottom + 80,
+            ),
             itemCount: items.length,
             itemBuilder: (context, i) => _RecurringTile(r: items[i]),
           );
@@ -749,7 +754,6 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
                     if (!context.mounted) return;
-
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(SnackBar(content: Text('Error: $e')));

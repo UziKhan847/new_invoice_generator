@@ -41,7 +41,12 @@ class EmployeesScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              12,
+              12,
+              MediaQuery.paddingOf(context).bottom + 80,
+            ),
             itemCount: employees.length,
             itemBuilder: (context, i) {
               final e = employees[i];
