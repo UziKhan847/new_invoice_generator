@@ -16,6 +16,8 @@ class Invoice {
   final String? senderName;
   final String? senderRole;
   final String? senderEmail;
+  // Notes / payment terms shown at bottom of invoice
+  final String? notes;
   // Company logo — injected at PDF generation time
   final String? companyLogoUrl;
 
@@ -34,6 +36,7 @@ class Invoice {
     this.senderName,
     this.senderRole,
     this.senderEmail,
+    this.notes,
     this.companyLogoUrl,
   }) : issueDate = issueDate ?? DateTime.now();
 
@@ -60,6 +63,7 @@ class Invoice {
       senderName: emp?['name'] as String?,
       senderRole: emp?['role'] as String?,
       senderEmail: emp?['email'] as String?,
+      notes: json['notes'] as String?,
     );
   }
 
@@ -77,25 +81,43 @@ class Invoice {
       'is_paid': isPaid,
       'status': status,
       'sender_employee_id': senderEmployeeId,
+      'notes': notes,
     };
   }
 
-  Invoice copyWith({String? companyLogoUrl}) {
+  Invoice copyWith({
+    String? companyLogoUrl,
+    String? invoiceNumber,
+    String? customerName,
+    String? customerId,
+    String? customerEmail,
+    List<InvoiceItem>? items,
+    DateTime? issueDate,
+    DateTime? dueDate,
+    bool? isPaid,
+    String? status,
+    String? senderEmployeeId,
+    String? senderName,
+    String? senderRole,
+    String? senderEmail,
+    String? notes,
+  }) {
     return Invoice(
       id: id,
-      invoiceNumber: invoiceNumber,
-      customerName: customerName,
-      customerId: customerId,
-      customerEmail: customerEmail,
-      items: items,
-      issueDate: issueDate,
-      dueDate: dueDate,
-      isPaid: isPaid,
-      status: status,
-      senderEmployeeId: senderEmployeeId,
-      senderName: senderName,
-      senderRole: senderRole,
-      senderEmail: senderEmail,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      customerName: customerName ?? this.customerName,
+      customerId: customerId ?? this.customerId,
+      customerEmail: customerEmail ?? this.customerEmail,
+      items: items ?? this.items,
+      issueDate: issueDate ?? this.issueDate,
+      dueDate: dueDate ?? this.dueDate,
+      isPaid: isPaid ?? this.isPaid,
+      status: status ?? this.status,
+      senderEmployeeId: senderEmployeeId ?? this.senderEmployeeId,
+      senderName: senderName ?? this.senderName,
+      senderRole: senderRole ?? this.senderRole,
+      senderEmail: senderEmail ?? this.senderEmail,
+      notes: notes ?? this.notes,
       companyLogoUrl: companyLogoUrl ?? this.companyLogoUrl,
     );
   }

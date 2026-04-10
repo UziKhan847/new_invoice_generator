@@ -4,6 +4,10 @@ import 'package:new_invoice_generator/repositories/invoice.dart';
 import 'package:new_invoice_generator/services/invoice_number.dart';
 import '../models/invoice.dart';
 
+final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(
+  InvoiceNotifier.new,
+);
+
 class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
   final repo = InvoiceRepository();
 
@@ -32,6 +36,7 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
       senderName: invoice.senderName,
       senderRole: invoice.senderRole,
       senderEmail: invoice.senderEmail,
+      notes: invoice.notes,
     );
     await repo.createInvoice(numbered, company['id']);
     ref.invalidateSelf();
@@ -49,8 +54,25 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     ref.invalidateSelf();
     await future;
   }
+
+  /// Duplicates an existing invoice: same items/customer/sender/notes,
+  /// new invoice number, today's issue date, unpaid status.
+  Future<void> duplicateInvoice(Invoice source) async {
+    final duplicate = Invoice(
+      invoiceNumber: '', // will be assigned in addInvoice
+      customerName: source.customerName,
+      customerId: source.customerId,
+      customerEmail: source.customerEmail,
+      items: source.items,
+      issueDate: DateTime.now(),
+      dueDate: source.dueDate,
+      senderEmployeeId: source.senderEmployeeId,
+      senderName: source.senderName,
+      senderRole: source.senderRole,
+      senderEmail: source.senderEmail,
+      notes: source.notes,
+    );
+    await addInvoice(duplicate);
+  }
 }
 
-final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(
-  InvoiceNotifier.new,
-);

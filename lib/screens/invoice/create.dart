@@ -22,6 +22,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final _qtyCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _discountCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
 
   String? _selectedCustomerId;
   String? _selectedCustomerName;
@@ -40,6 +41,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
     _discountCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
   }
 
@@ -106,6 +108,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             senderName: _selectedEmployee?.name,
             senderRole: _selectedEmployee?.role,
             senderEmail: _selectedEmployee?.email,
+            notes: _notesCtrl.text.trim().isEmpty
+                ? null
+                : _notesCtrl.text.trim(),
           ),
         );
     Navigator.pop(context);
@@ -430,6 +435,22 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 ],
               ),
             ),
+          const SizedBox(height: 12),
+
+          // ── Notes / Payment Terms ──────────────────────────────────
+          _SectionCard(
+            title: 'Notes & Payment Terms',
+            child: TextField(
+              controller: _notesCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText:
+                    'e.g. Payment due within 30 days. E-transfer accepted.',
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
 
           ElevatedButton(

@@ -29,10 +29,8 @@ class RevenueBarChart extends StatelessWidget {
             SizedBox(
               height: availableBarHeight,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: isSingle
-                    ? MainAxisAlignment.center
-                    : MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: .end,
+                mainAxisAlignment: isSingle ? .center : .spaceEvenly,
                 children: bars.map((bar) {
                   final frac = max == 0
                       ? 0.0
@@ -50,28 +48,26 @@ class RevenueBarChart extends StatelessWidget {
                   return SizedBox(
                     width: barW,
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: .end,
                       children: [
                         // Value label
                         SizedBox(
                           height: labelSize + 2,
                           child: bar.value > 0
                               ? FittedBox(
-                                  fit: BoxFit.scaleDown,
+                                  fit: .scaleDown,
                                   child: Text(
                                     bar.value >= 1000
                                         ? '\$${(bar.value / 1000).toStringAsFixed(1)}k'
                                         : '\$${bar.value.toStringAsFixed(0)}',
                                     style: TextStyle(
                                       fontSize: labelSize,
-                                      fontWeight: isHighest
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                                      fontWeight: isHighest ? .bold : .normal,
                                       color: isHighest
                                           ? cs.primary
                                           : cs.onSurface.withAlpha(160),
                                     ),
-                                    textAlign: TextAlign.center,
+                                    textAlign: .center,
                                   ),
                                 )
                               : const SizedBox.shrink(),
@@ -87,7 +83,7 @@ class RevenueBarChart extends StatelessWidget {
                                 ? cs.primary
                                 : cs.primary.withAlpha(140),
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(4),
+                              top: .circular(4),
                             ),
                           ),
                         ),
@@ -103,9 +99,7 @@ class RevenueBarChart extends StatelessWidget {
             SizedBox(
               height: labelSize + 2,
               child: Row(
-                mainAxisAlignment: isSingle
-                    ? MainAxisAlignment.center
-                    : MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: isSingle ? .center : .spaceEvenly,
                 children: bars.map((bar) {
                   final barW = isSingle
                       ? 56.0
@@ -116,10 +110,10 @@ class RevenueBarChart extends StatelessWidget {
                   return SizedBox(
                     width: barW,
                     child: FittedBox(
-                      fit: BoxFit.scaleDown,
+                      fit: .scaleDown,
                       child: Text(
                         bar.label,
-                        textAlign: TextAlign.center,
+                        textAlign: .center,
                         style: TextStyle(
                           fontSize: labelSize,
                           color: cs.onSurface.withAlpha(160),

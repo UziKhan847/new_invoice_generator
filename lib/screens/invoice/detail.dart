@@ -7,7 +7,6 @@ import 'package:new_invoice_generator/services/email.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/storage.dart';
-import 'package:new_invoice_generator/utils/with_loading_overlay.dart';
 import 'package:printing/printing.dart';
 import 'package:new_invoice_generator/services/receipt_pdf.dart';
 
@@ -48,8 +47,9 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     logoUrl = await StorageService.getFreshLogoUrl(storagePath);
                   }
                   logoUrl ??= company['logo_url'] as String?;
-                  if (!context.mounted) return;
-                  _showEmailDialog(context, invoice, logoUrl: logoUrl);
+                  if (context.mounted) {
+                    _showEmailDialog(context, invoice, logoUrl: logoUrl);
+                  }
                 },
               ),
               IconButton(
@@ -66,13 +66,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   final inv = logoUrl != null
                       ? invoice.copyWith(companyLogoUrl: logoUrl)
                       : invoice;
-                  if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => _PdfPreviewScreen(invoice: inv),
-                    ),
-                  );
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => _PdfPreviewScreen(invoice: inv),
+                      ),
+                    );
+                  }
                 },
               ),
               IconButton(
@@ -86,20 +87,13 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     logoUrl = await StorageService.getFreshLogoUrl(storagePath);
                   }
                   logoUrl ??= company['logo_url'] as String?;
-                  if (!context.mounted) return;
-                  await withLoadingOverlay(
-                    context,
-                    message: 'Saving PDF…',
-                    task: () async {
-                      if (context.mounted) {
-                        await DownloadService.downloadInvoice(
-                          context: context,
-                          invoice: invoice,
-                          companyLogoUrl: logoUrl,
-                        );
-                      }
-                    },
-                  );
+                  if (context.mounted) {
+                    await DownloadService.downloadInvoice(
+                      context: context,
+                      invoice: invoice,
+                      companyLogoUrl: logoUrl,
+                    );
+                  }
                 },
               ),
               IconButton(
@@ -113,17 +107,10 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     logoUrl = await StorageService.getFreshLogoUrl(storagePath);
                   }
                   logoUrl ??= company['logo_url'] as String?;
-                  if (!context.mounted) return;
-                  await withLoadingOverlay(
-                    context,
-                    message: 'Please wait…',
-                    task: () async {
-                      await PdfService.generateInvoicePdf(
-                        logoUrl != null
-                            ? invoice.copyWith(companyLogoUrl: logoUrl)
-                            : invoice,
-                      );
-                    },
+                  await PdfService.generateInvoicePdf(
+                    logoUrl != null
+                        ? invoice.copyWith(companyLogoUrl: logoUrl)
+                        : invoice,
                   );
                 },
               ),
@@ -311,6 +298,40 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              // ── Notes ─────────────────────────────────────────
+              if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.notes_outlined, size: 16),
+                            SizedBox(width: 8),
+                            Text(
+                              'Notes & Payment Terms',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          invoice.notes!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(180),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               if (!invoice.isPaid)
                 ElevatedButton.icon(
@@ -336,6 +357,51 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       ReceiptPdfService.generateReceipt(invoice),
                 ),
               ],
+              // ── Duplicate invoice ─────────────────────────────
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.copy_outlined),
+                label: const Text('Duplicate Invoice'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Duplicate invoice?'),
+                      content: const Text(
+                        'Creates a new unpaid invoice with the same items, '
+                        'customer, and sender. Today will be the issue date.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Duplicate'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && context.mounted) {
+                    await ref
+                        .read(invoiceProvider.notifier)
+                        .duplicateInvoice(invoice);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context)
+                        ..clearSnackBars()
+                        ..showSnackBar(
+                          const SnackBar(
+                            content: Text('Invoice duplicated successfully!'),
+                          ),
+                        );
+                    }
+                  }
+                },
+              ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 icon: const Icon(Icons.delete_outline),
@@ -469,20 +535,11 @@ class InvoiceDetailScreen extends ConsumerWidget {
             onPressed: () async {
               if (emailCtrl.text.trim().isEmpty) return;
               Navigator.pop(context);
-              if (!context.mounted) return;
-              await withLoadingOverlay(
-                context,
-                message: 'Preparing email…',
-                task: () async {
-                  if (context.mounted) {
-                    await EmailService.emailInvoice(
-                      context: context,
-                      invoice: invoice,
-                      recipientEmail: emailCtrl.text.trim(),
-                      companyLogoUrl: logoUrl,
-                    );
-                  }
-                },
+              await EmailService.emailInvoice(
+                context: context,
+                invoice: invoice,
+                recipientEmail: emailCtrl.text.trim(),
+                companyLogoUrl: logoUrl,
               );
             },
           ),
