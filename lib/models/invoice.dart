@@ -40,22 +40,32 @@ class Invoice {
     this.companyLogoUrl,
   }) : issueDate = issueDate ?? DateTime.now();
 
+  /// Sum of item totals AFTER discounts (what the customer pays before tax)
   double get subtotal => items.fold(0, (sum, item) => sum + item.total);
-  double get tax => subtotal * 0.13;
+
+  /// Tax is calculated on the PRE-discount price (full item subtotals)
+  double get taxableSubtotal =>
+      items.fold(0, (sum, item) => sum + item.subtotal);
+  double get totalDiscountAmount =>
+      items.fold(0, (sum, item) => sum + item.discountAmount);
+  double get tax => taxableSubtotal * 0.13;
   double get total => subtotal + tax;
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
     final itemsJson = json['invoice_items'] as List? ?? [];
-    final emp  = json['employees']  as Map<String, dynamic>?;
-    final cust = json['customers']  as Map<String, dynamic>?;
+    final emp = json['employees'] as Map<String, dynamic>?;
+    final cust = json['customers'] as Map<String, dynamic>?;
     return Invoice(
       id: json['id'],
       invoiceNumber: json['invoice_number'] ?? '',
       customerName: json['customer_name'] ?? '',
       customerId: json['customer_id'] as String?,
-      customerEmail: cust?['email'] as String? ?? json['customer_email'] as String?,
+      customerEmail:
+          cust?['email'] as String? ?? json['customer_email'] as String?,
       issueDate: DateTime.parse(json['issue_date'] ?? json['created_at']),
-      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
+      dueDate: json['due_date'] != null
+          ? DateTime.parse(json['due_date'])
+          : null,
       isPaid: json['is_paid'] ?? false,
       status: json['status'] ?? 'unpaid',
       items: itemsJson.map((item) => InvoiceItem.fromJson(item)).toList(),

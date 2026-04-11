@@ -18,11 +18,11 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
-  final _itemDescCtrl = TextEditingController();
-  final _qtyCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
-  final _discountCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
+  final _itemDescCtrl  = TextEditingController();
+  final _qtyCtrl       = TextEditingController();
+  final _priceCtrl     = TextEditingController();
+  final _discountCtrl  = TextEditingController();
+  final _notesCtrl     = TextEditingController();
 
   String? _selectedCustomerId;
   String? _selectedCustomerName;
@@ -46,22 +46,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   void _addItem() {
-    final desc = _itemDescCtrl.text.trim();
-    final qty = int.tryParse(_qtyCtrl.text) ?? 1;
+    final desc  = _itemDescCtrl.text.trim();
+    final qty   = int.tryParse(_qtyCtrl.text) ?? 1;
     final price = double.tryParse(_priceCtrl.text) ?? 0;
-    final disc = double.tryParse(_discountCtrl.text) ?? 0;
+    final disc  = double.tryParse(_discountCtrl.text) ?? 0;
     if (desc.isEmpty) return;
 
     setState(() {
-      items.add(
-        InvoiceItem(
-          description: desc,
-          quantity: qty,
-          unitPrice: price,
-          discountPercent: _discountIsPercent ? disc : 0,
-          discountFlat: _discountIsPercent ? 0 : disc,
-        ),
-      );
+      items.add(InvoiceItem(
+        description:     desc,
+        quantity:        qty,
+        unitPrice:       price,
+        discountPercent: _discountIsPercent ? disc : 0,
+        discountFlat:    _discountIsPercent ? 0 : disc,
+      ));
       _itemDescCtrl.clear();
       _qtyCtrl.clear();
       _priceCtrl.clear();
@@ -82,56 +80,51 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   void _saveInvoice() {
     if (_selectedCustomerName == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select a customer')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a customer')));
       return;
     }
     if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one item')),
-      );
+          const SnackBar(content: Text('Please add at least one item')));
       return;
     }
-    ref
-        .read(invoiceProvider.notifier)
-        .addInvoice(
-          Invoice(
-            invoiceNumber: '',
-            customerName: _selectedCustomerName!,
-            customerId: _selectedCustomerId,
-            customerEmail: _selectedCustomerEmail,
-            issueDate: DateTime.now(),
-            dueDate: _dueDate,
-            items: items,
-            senderEmployeeId: _selectedEmployee?.id,
-            senderName: _selectedEmployee?.name,
-            senderRole: _selectedEmployee?.role,
-            senderEmail: _selectedEmployee?.email,
-            notes: _notesCtrl.text.trim().isEmpty
-                ? null
-                : _notesCtrl.text.trim(),
-          ),
-        );
+    ref.read(invoiceProvider.notifier).addInvoice(Invoice(
+      invoiceNumber:    '',
+      customerName:     _selectedCustomerName!,
+      customerId:       _selectedCustomerId,
+      customerEmail:    _selectedCustomerEmail,
+      issueDate:        DateTime.now(),
+      dueDate:          _dueDate,
+      items:            items,
+      senderEmployeeId: _selectedEmployee?.id,
+      senderName:       _selectedEmployee?.name,
+      senderRole:       _selectedEmployee?.role,
+      senderEmail:      _selectedEmployee?.email,
+      notes:            _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+    ));
     Navigator.pop(context);
   }
 
-  double get _subtotal => items.fold(0, (s, i) => s + i.total);
-  double get _tax => _subtotal * 0.13;
-  double get _total => _subtotal + _tax;
+  double get _subtotal         => items.fold(0, (s, i) => s + i.total);
+  double get _taxableSubtotal  => items.fold(0, (s, i) => s + i.subtotal);
+  double get _totalDiscounts   => items.fold(0, (s, i) => s + i.discountAmount);
+  double get _tax              => _taxableSubtotal * 0.13;
+  double get _total            => _subtotal + _tax;
 
   @override
   Widget build(BuildContext context) {
-    final customersAsync = ref.watch(customerProvider);
-    final employeesAsync = ref.watch(employeeProvider);
-    final services = ref.watch(serviceProvider).asData?.value ?? [];
-    final cs = Theme.of(context).colorScheme;
+    final customersAsync  = ref.watch(customerProvider);
+    final employeesAsync  = ref.watch(employeeProvider);
+    final services        = ref.watch(serviceProvider).asData?.value ?? [];
+    final cs              = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create Invoice')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+
           // ── Customer ──────────────────────────────────────────────
           _SectionCard(
             title: 'Customer',
@@ -143,24 +136,18 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   data: (customers) => DropdownButtonFormField<String>(
                     initialValue: _selectedCustomerId,
                     decoration: const InputDecoration(
-                      labelText: 'Select customer',
-                    ),
+                        labelText: 'Select customer'),
                     items: customers
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ),
-                        )
+                        .map((c) => DropdownMenuItem(
+                            value: c.id, child: Text(c.name)))
                         .toList(),
                     onChanged: (v) {
                       final c = customers.cast<dynamic>().firstWhere(
-                        (c) => c.id == v,
-                        orElse: () => null,
-                      );
+                          (c) => c.id == v,
+                          orElse: () => null);
                       setState(() {
-                        _selectedCustomerId = v;
-                        _selectedCustomerName = c?.name as String?;
+                        _selectedCustomerId    = v;
+                        _selectedCustomerName  = c?.name as String?;
                         _selectedCustomerEmail = c?.email as String?;
                       });
                     },
@@ -169,23 +156,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 if (_selectedCustomerEmail != null &&
                     _selectedCustomerEmail!.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.email_outlined,
-                        size: 13,
-                        color: cs.onSurface.withAlpha(130),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _selectedCustomerEmail!,
+                  Row(children: [
+                    Icon(Icons.email_outlined,
+                        size: 13, color: cs.onSurface.withAlpha(130)),
+                    const SizedBox(width: 6),
+                    Text(_selectedCustomerEmail!,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurface.withAlpha(140),
-                        ),
-                      ),
-                    ],
-                  ),
+                            fontSize: 12,
+                            color: cs.onSurface.withAlpha(140))),
+                  ]),
                 ],
               ],
             ),
@@ -205,19 +184,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         DropdownButtonFormField<String>(
                           initialValue: _selectedEmployee?.id,
                           decoration: const InputDecoration(
-                            labelText: 'Select employee (optional)',
-                          ),
+                              labelText: 'Select employee (optional)'),
                           items: [
                             const DropdownMenuItem(
-                              value: null,
-                              child: Text('No employee'),
-                            ),
-                            ...employees.map(
-                              (e) => DropdownMenuItem(
+                                value: null, child: Text('No employee')),
+                            ...employees.map((e) => DropdownMenuItem(
                                 value: e.id,
-                                child: Text('${e.name} · ${e.role}'),
-                              ),
-                            ),
+                                child: Text('${e.name} · ${e.role}'))),
                           ],
                           onChanged: (v) => setState(() {
                             _selectedEmployee = v == null
@@ -230,36 +203,29 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
+                                horizontal: 10, vertical: 8),
                             decoration: BoxDecoration(
                               color: Colors.green.withAlpha(20),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Colors.green.withAlpha(60),
-                              ),
+                                  color: Colors.green.withAlpha(60)),
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(
+                            child: Row(children: [
+                              const Icon(
                                   Icons.account_balance_wallet_outlined,
                                   size: 14,
-                                  color: Colors.green,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'E-transfer to: ${_selectedEmployee!.email}',
-                                    style: const TextStyle(
+                                  color: Colors.green),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'E-transfer to: ${_selectedEmployee!.email}',
+                                  style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.green,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                      fontWeight: FontWeight.w500),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ]),
                           ),
                         ],
                       ],
@@ -272,23 +238,22 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.calendar_today_outlined),
-              title: Text(
-                _dueDate == null
-                    ? 'Set due date (optional)'
-                    : 'Due: ${_dueDate!.toLocal().toString().split(' ')[0]}',
-              ),
+              title: Text(_dueDate == null
+                  ? 'Set due date (optional)'
+                  : 'Due: ${_dueDate!.toLocal().toString().split(' ')[0]}'),
               trailing: _dueDate != null
                   ? IconButton(
                       icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() => _dueDate = null),
-                    )
+                      onPressed: () => setState(() => _dueDate = null))
                   : null,
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now().add(const Duration(days: 30)),
+                  initialDate:
+                      DateTime.now().add(const Duration(days: 30)),
                   firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  lastDate:
+                      DateTime.now().add(const Duration(days: 365)),
                 );
                 if (picked != null) setState(() => _dueDate = picked);
               },
@@ -304,14 +269,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: services
-                    .map(
-                      (s) => ActionChip(
-                        label: Text(
-                          '${s.name} (\$${s.unitPrice.toStringAsFixed(2)})',
-                        ),
-                        onPressed: () => _addServiceItem(s),
-                      ),
-                    )
+                    .map((s) => ActionChip(
+                          label: Text(
+                              '${s.name} (\$${s.unitPrice.toStringAsFixed(2)})'),
+                          onPressed: () => _addServiceItem(s),
+                        ))
                     .toList(),
               ),
             ),
@@ -323,33 +285,29 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             child: Column(
               children: [
                 TextField(
-                  controller: _itemDescCtrl,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                ),
+                    controller: _itemDescCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Description')),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
+                Row(children: [
+                  Expanded(
+                    child: TextField(
                         controller: _qtyCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Qty'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
+                        decoration:
+                            const InputDecoration(labelText: 'Qty')),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
                         controller: _priceCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Unit price (\$)',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(
+                                decimal: true),
+                        decoration:
+                            const InputDecoration(labelText: 'Unit price (\$)')),
+                  ),
+                ]),
                 const SizedBox(height: 8),
 
                 // ── Discount row ──────────────────────────────────
@@ -358,18 +316,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     Expanded(
                       child: TextField(
                         controller: _discountCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(
+                                decimal: true),
                         decoration: InputDecoration(
                           labelText: _discountIsPercent
                               ? 'Discount (%)'
                               : 'Discount (\$)',
                           hintText: 'Optional',
                           prefixIcon: const Icon(
-                            Icons.local_offer_outlined,
-                            size: 18,
-                          ),
+                              Icons.local_offer_outlined,
+                              size: 18),
                         ),
                       ),
                     ),
@@ -377,7 +334,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     // Toggle % vs $
                     SegmentedButton<bool>(
                       segments: const [
-                        ButtonSegment(value: true, label: Text('%')),
+                        ButtonSegment(value: true,  label: Text('%')),
                         ButtonSegment(value: false, label: Text('\$')),
                       ],
                       selected: {_discountIsPercent},
@@ -410,22 +367,27 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               title: 'Items',
               child: Column(
                 children: [
-                  ...items.map(
-                    (item) => _ItemRow(
-                      item: item,
-                      onRemove: () => setState(() => items.remove(item)),
-                    ),
-                  ),
+                  ...items.map((item) => _ItemRow(
+                        item: item,
+                        onRemove: () => setState(() => items.remove(item)),
+                      )),
                   const Divider(height: 20),
                   // Totals
                   _TotalLine(
-                    label: 'Subtotal',
-                    value: '\$${_subtotal.toStringAsFixed(2)}',
-                  ),
+                      label: 'Pre-discount Subtotal',
+                      value: '\$${_taxableSubtotal.toStringAsFixed(2)}'),
+                  if (_totalDiscounts > 0) ...[
+                    _TotalLine(
+                        label: 'Total Discounts',
+                        value: '−\$${_totalDiscounts.toStringAsFixed(2)}',
+                        color: Colors.green),
+                    _TotalLine(
+                        label: 'After discounts',
+                        value: '\$${_subtotal.toStringAsFixed(2)}'),
+                  ],
                   _TotalLine(
-                    label: 'Tax (13%)',
-                    value: '\$${_tax.toStringAsFixed(2)}',
-                  ),
+                      label: 'Tax (13% on \$${_taxableSubtotal.toStringAsFixed(2)})',
+                      value: '\$${_tax.toStringAsFixed(2)}'),
                   const SizedBox(height: 4),
                   _TotalLine(
                     label: 'Total',
@@ -444,8 +406,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               controller: _notesCtrl,
               maxLines: 3,
               decoration: const InputDecoration(
-                hintText:
-                    'e.g. Payment due within 30 days. E-transfer accepted.',
+                hintText: 'e.g. Payment due within 30 days. E-transfer accepted.',
                 border: InputBorder.none,
                 isDense: true,
               ),
@@ -456,9 +417,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ElevatedButton(
             onPressed: _saveInvoice,
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-            ),
-            child: const Text('Save Invoice', style: TextStyle(fontSize: 16)),
+                minimumSize: const Size.fromHeight(50)),
+            child: const Text('Save Invoice',
+                style: TextStyle(fontSize: 16)),
           ),
           const SizedBox(height: 40),
         ],
@@ -485,25 +446,20 @@ class _ItemRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.description,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
+                Text(item.description,
+                    style: const TextStyle(fontWeight: FontWeight.w500)),
                 Text(
                   'x${item.quantity}  ×  \$${item.unitPrice.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurface.withAlpha(150),
-                  ),
+                      fontSize: 12, color: cs.onSurface.withAlpha(150)),
                 ),
                 if (item.hasDiscount)
                   Text(
                     '− ${item.discountLabel}  (−\$${item.discountAmount.toStringAsFixed(2)})',
                     style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        fontSize: 11,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500),
                   ),
               ],
             ),
@@ -516,23 +472,17 @@ class _ItemRow extends StatelessWidget {
                 Text(
                   '\$${item.subtotal.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 11,
-                    color: cs.onSurface.withAlpha(120),
-                    decoration: TextDecoration.lineThrough,
-                  ),
+                      fontSize: 11,
+                      color: cs.onSurface.withAlpha(120),
+                      decoration: TextDecoration.lineThrough),
                 ),
-              Text(
-                '\$${item.total.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
+              Text('\$${item.total.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ],
           ),
           IconButton(
-            icon: const Icon(
-              Icons.remove_circle_outline,
-              size: 18,
-              color: Colors.red,
-            ),
+            icon: const Icon(Icons.remove_circle_outline,
+                size: 18, color: Colors.red),
             onPressed: onRemove,
             padding: const EdgeInsets.only(left: 4),
             constraints: const BoxConstraints(),
@@ -547,14 +497,17 @@ class _ItemRow extends StatelessWidget {
 class _QuickAddServiceDialog extends StatefulWidget {
   final Service service;
   final void Function(InvoiceItem) onAdd;
-  const _QuickAddServiceDialog({required this.service, required this.onAdd});
+  const _QuickAddServiceDialog(
+      {required this.service, required this.onAdd});
 
   @override
-  State<_QuickAddServiceDialog> createState() => _QuickAddServiceDialogState();
+  State<_QuickAddServiceDialog> createState() =>
+      _QuickAddServiceDialogState();
 }
 
-class _QuickAddServiceDialogState extends State<_QuickAddServiceDialog> {
-  final _qtyCtrl = TextEditingController(text: '1');
+class _QuickAddServiceDialogState
+    extends State<_QuickAddServiceDialog> {
+  final _qtyCtrl      = TextEditingController(text: '1');
   final _discountCtrl = TextEditingController();
   bool _isPercent = true;
 
@@ -567,14 +520,14 @@ class _QuickAddServiceDialogState extends State<_QuickAddServiceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final qty = int.tryParse(_qtyCtrl.text) ?? 1;
-    final disc = double.tryParse(_discountCtrl.text) ?? 0;
-    final item = InvoiceItem(
-      description: widget.service.name,
-      quantity: qty,
-      unitPrice: widget.service.unitPrice,
+    final qty   = int.tryParse(_qtyCtrl.text) ?? 1;
+    final disc  = double.tryParse(_discountCtrl.text) ?? 0;
+    final item  = InvoiceItem(
+      description:     widget.service.name,
+      quantity:        qty,
+      unitPrice:       widget.service.unitPrice,
       discountPercent: _isPercent ? disc : 0,
-      discountFlat: _isPercent ? 0 : disc,
+      discountFlat:    _isPercent ? 0 : disc,
     );
 
     return AlertDialog(
@@ -585,8 +538,10 @@ class _QuickAddServiceDialogState extends State<_QuickAddServiceDialog> {
           Text(
             '\$${widget.service.unitPrice.toStringAsFixed(2)} ${widget.service.rateLabel}',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-            ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withAlpha(150)),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -596,44 +551,45 @@ class _QuickAddServiceDialogState extends State<_QuickAddServiceDialog> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _discountCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: _isPercent ? 'Discount (%)' : 'Discount (\$)',
-                    hintText: 'Optional',
-                  ),
-                  onChanged: (_) => setState(() {}),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _discountCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText:
+                      _isPercent ? 'Discount (%)' : 'Discount (\$)',
+                  hintText: 'Optional',
                 ),
+                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(width: 8),
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: true, label: Text('%')),
-                  ButtonSegment(value: false, label: Text('\$')),
-                ],
-                selected: {_isPercent},
-                onSelectionChanged: (s) => setState(() => _isPercent = s.first),
-                style: SegmentedButton.styleFrom(
-                  minimumSize: const Size(56, 40),
-                  textStyle: const TextStyle(fontSize: 12),
-                ),
+            ),
+            const SizedBox(width: 8),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true,  label: Text('%')),
+                ButtonSegment(value: false, label: Text('\$')),
+              ],
+              selected: {_isPercent},
+              onSelectionChanged: (s) =>
+                  setState(() => _isPercent = s.first),
+              style: SegmentedButton.styleFrom(
+                minimumSize: const Size(56, 40),
+                textStyle: const TextStyle(fontSize: 12),
               ),
-            ],
-          ),
+            ),
+          ]),
           // Live total preview
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withAlpha(80),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withAlpha(80),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -646,26 +602,21 @@ class _QuickAddServiceDialogState extends State<_QuickAddServiceDialog> {
                       Text(
                         'Subtotal: \$${item.subtotal.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontSize: 11,
-                          decoration: TextDecoration.lineThrough,
-                        ),
+                            fontSize: 11,
+                            decoration: TextDecoration.lineThrough),
                       ),
                     if (item.hasDiscount)
                       Text(
                         '− ${item.discountLabel}',
                         style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.green,
-                        ),
+                            fontSize: 11, color: Colors.green),
                       ),
                   ],
                 ),
                 Text(
                   '\$${item.total.toStringAsFixed(2)}',
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -674,9 +625,8 @@ class _QuickAddServiceDialogState extends State<_QuickAddServiceDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context);
@@ -703,12 +653,11 @@ class _SectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text(title,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             child,
           ],
@@ -722,17 +671,21 @@ class _TotalLine extends StatelessWidget {
   final String label;
   final String value;
   final bool bold;
+  final Color? color;
   const _TotalLine({
     required this.label,
     required this.value,
     this.bold = false,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final style = bold
-        ? const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
-        : null;
+    final style = TextStyle(
+      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+      fontSize: bold ? 15 : 13,
+      color: color,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(

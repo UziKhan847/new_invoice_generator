@@ -4,10 +4,12 @@ import 'package:new_invoice_generator/main.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/company_profile.dart';
 import 'package:new_invoice_generator/screens/employees.dart';
+import 'package:new_invoice_generator/screens/expense.dart';
 import 'package:new_invoice_generator/screens/more/widgets/company_logo_card.dart';
 import 'package:new_invoice_generator/screens/more/widgets/more_nav_tile.dart';
 import 'package:new_invoice_generator/screens/recurring_invoices.dart';
 import 'package:new_invoice_generator/screens/services.dart';
+import 'package:new_invoice_generator/screens/tax_report.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -21,7 +23,6 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
           // ── Company card ─────────────────────────────────────────
           const CompanyLogoCard(),
           const SizedBox(height: 16),
@@ -66,6 +67,18 @@ class MoreScreen extends ConsumerWidget {
                   label: 'Recurring Invoices',
                   onTap: () => _push(context, const RecurringInvoicesScreen()),
                 ),
+                const Divider(height: 0, indent: 56),
+                MoreNavTile(
+                  icon: Icons.receipt_long_outlined,
+                  label: 'Expenses',
+                  onTap: () => _push(context, const ExpensesScreen()),
+                ),
+                const Divider(height: 0, indent: 56),
+                MoreNavTile(
+                  icon: Icons.calculate_outlined,
+                  label: 'Tax Report',
+                  onTap: () => _push(context, const TaxReportScreen()),
+                ),
               ],
             ),
           ),
@@ -96,18 +109,16 @@ class MoreScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Log out?'),
-        content:
-            const Text('You will be returned to the login screen.'),
+        content: const Text('You will be returned to the login screen.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log out',
-                style: TextStyle(color: Colors.white)),
+            child: const Text('Log out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

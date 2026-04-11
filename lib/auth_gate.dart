@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/main.dart';
 import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
 import 'package:new_invoice_generator/providers/home_analytics.dart';
@@ -40,6 +41,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     ref.invalidate(serviceProvider);
     ref.invalidate(recurringInvoiceProvider);
     ref.invalidate(homeAnalyticsProvider);
+    ref.invalidate(expenseProvider);
   }
 
   @override
