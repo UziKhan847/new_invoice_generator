@@ -1,7 +1,7 @@
 class InvoiceItem {
   final String? id;
   final String description;
-  final int quantity;
+  final double quantity;
   final double unitPrice;
   // Discount: either a % (0-100) or a flat $ amount — only one is used
   final double discountPercent; // e.g. 10.0 = 10%
@@ -17,6 +17,15 @@ class InvoiceItem {
   });
 
   double get subtotal => quantity * unitPrice;
+
+  /// Display-friendly quantity: shows "3" for 3.0, "3.5" for 3.5, "3.25" for 3.25
+  String get quantityDisplay {
+    if (quantity == quantity.truncateToDouble()) {
+      return quantity.toInt().toString();
+    }
+    // Remove trailing zeros: 3.50 → "3.5"
+    return quantity.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
 
   /// Discount amount in dollars
   double get discountAmount {
@@ -43,7 +52,7 @@ class InvoiceItem {
     return InvoiceItem(
       id: json['id'] as String?,
       description: json['description'] ?? '',
-      quantity: (json['quantity'] as num).toInt(),
+      quantity: (json['quantity'] as num).toDouble(),
       unitPrice: (json['unit_price'] as num).toDouble(),
       discountPercent:
           (json['discount_percent'] as num?)?.toDouble() ?? 0,

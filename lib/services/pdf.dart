@@ -184,7 +184,7 @@ class PdfService {
                                 style: const pw.TextStyle(fontSize: 11))),
                         pw.Expanded(
                             flex: 1,
-                            child: pw.Text('${item.quantity}',
+                            child: pw.Text(item.quantityDisplay,
                                 textAlign: pw.TextAlign.center,
                                 style: const pw.TextStyle(fontSize: 11))),
                         pw.Expanded(

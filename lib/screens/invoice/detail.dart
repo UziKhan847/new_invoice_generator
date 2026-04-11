@@ -252,7 +252,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                           child: Row(
                             children: [
                               Expanded(child: Text(item.description)),
-                              Text('x${item.quantity}  \$${item.unitPrice.toStringAsFixed(2)}'),
+                              Text('x${item.quantityDisplay}  \$${item.unitPrice.toStringAsFixed(2)}'),
                               const SizedBox(width: 16),
                               Text('\$${item.total.toStringAsFixed(2)}',
                                   style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -274,7 +274,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             value: invoice.subtotal),
                       ],
                       _TotalRow(
-                        label: 'Tax (13% on \\${invoice.taxableSubtotal.toStringAsFixed(2)})',
+                        label: 'Tax (13% on \$${invoice.taxableSubtotal.toStringAsFixed(2)})',
                         value: invoice.tax,
                       ),
                       const SizedBox(height: 4),
