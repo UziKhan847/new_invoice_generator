@@ -385,7 +385,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                     // Build a descriptive label e.g. "Quran Lessons (8 hrs)"
                     final label = units == 1.0
                         ? _labelCtrl.text.trim()
-                        : '\${_labelCtrl.text.trim()} (\${_formatUnits(units)} $unitLabel)';
+                        : '${_labelCtrl.text.trim()} (${_formatUnits(units)} $unitLabel)';
 
                     await ref
                         .read(recurringInvoiceProvider.notifier)
@@ -427,6 +427,11 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
 }
 
 // ── Edit recurring template ───────────────────────────────────────────────────
+String _formatUnits(double v) {
+  // Show as integer if whole number, otherwise show up to 2 decimal places
+  if (v == v.truncateToDouble()) return v.toInt().toString();
+  return v.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '');
+}
 
 class _EditRecurringDialog extends ConsumerStatefulWidget {
   final RecurringInvoice r;
