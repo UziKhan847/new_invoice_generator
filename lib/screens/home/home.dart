@@ -98,9 +98,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               child: _chartIndex == 0
                                   ? RevenueBarChart(bars: analytics.monthlyBars)
                                   : _chartIndex == 1
-                                  ? PaidUnpaidDonut(
-                                      paid: analytics.paidAmount,
-                                      unpaid: analytics.unpaidAmount,
+                                  ? Builder(
+                                      builder: (ctx) {
+                                        // Direct from invoiceProvider — instantly reactive
+                                        final invs =
+                                            ref
+                                                .watch(invoiceProvider)
+                                                .asData
+                                                ?.value ??
+                                            [];
+                                        final p = invs.fold(
+                                          0.0,
+                                          (s, i) =>
+                                              s + (i.isPaid ? i.total : 0.0),
+                                        );
+                                        final u = invs.fold(
+                                          0.0,
+                                          (s, i) =>
+                                              s + (i.isPaid ? 0.0 : i.total),
+                                        );
+                                        return PaidUnpaidDonut(
+                                          paid: p,
+                                          unpaid: u,
+                                        );
+                                      },
                                     )
                                   : CountLineChart(
                                       bars: analytics.invoiceCountBars,

@@ -5,11 +5,7 @@ class CountLineChart extends StatelessWidget {
   final List<MonthlyBar> bars;
   final double labelSize;
 
-  const CountLineChart({
-    super.key,
-    required this.bars,
-    this.labelSize = 10,
-  });
+  const CountLineChart({super.key, required this.bars, this.labelSize = 10});
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +22,17 @@ class CountLineChart extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(top: 16, left: 4, right: 4),
             child: isSingle
-                ? _SinglePointChart(bar: bars.first, color: cs.primary,
-                    labelSize: labelSize)
+                ? _SinglePointChart(
+                    bar: bars.first,
+                    color: cs.primary,
+                    labelSize: labelSize,
+                  )
                 : CustomPaint(
                     painter: _LinePainter(
-                        bars: bars,
-                        color: cs.primary,
-                        labelSize: labelSize),
+                      bars: bars,
+                      color: cs.primary,
+                      labelSize: labelSize,
+                    ),
                     size: Size.infinite,
                   ),
           ),
@@ -42,22 +42,28 @@ class CountLineChart extends StatelessWidget {
           height: labelSize + 4,
           child: isSingle
               ? Center(
-                  child: Text(bars.first.label,
-                      style: TextStyle(
-                          fontSize: labelSize,
-                          color: cs.onSurface.withAlpha(160))),
+                  child: Text(
+                    bars.first.label,
+                    style: TextStyle(
+                      fontSize: labelSize,
+                      color: cs.onSurface.withAlpha(160),
+                    ),
+                  ),
                 )
               : Row(
                   children: bars
-                      .map((b) => Expanded(
-                            child: Text(
-                              b.label,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontSize: labelSize,
-                                  color: cs.onSurface.withAlpha(160)),
+                      .map(
+                        (b) => Expanded(
+                          child: Text(
+                            b.label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: labelSize,
+                              color: cs.onSurface.withAlpha(160),
                             ),
-                          ))
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
         ),
@@ -70,8 +76,11 @@ class _SinglePointChart extends StatelessWidget {
   final MonthlyBar bar;
   final Color color;
   final double labelSize;
-  const _SinglePointChart(
-      {required this.bar, required this.color, required this.labelSize});
+  const _SinglePointChart({
+    required this.bar,
+    required this.color,
+    required this.labelSize,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -83,14 +92,17 @@ class _SinglePointChart extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-                color: color.withAlpha(30), shape: BoxShape.circle),
+              color: color.withAlpha(30),
+              shape: BoxShape.circle,
+            ),
             child: Center(
               child: Text(
                 '${bar.value.toInt()}',
                 style: TextStyle(
-                    fontSize: labelSize * 2,
-                    fontWeight: FontWeight.bold,
-                    color: color),
+                  fontSize: labelSize * 2,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
             ),
           ),
@@ -110,13 +122,15 @@ class _LinePainter extends CustomPainter {
   final Color color;
   final double labelSize;
 
-  _LinePainter(
-      {required this.bars, required this.color, required this.labelSize});
+  _LinePainter({
+    required this.bars,
+    required this.color,
+    required this.labelSize,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final max =
-        bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
+    final max = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
     if (max == 0) return;
 
     final topPad = labelSize + 8;
@@ -130,19 +144,27 @@ class _LinePainter extends CustomPainter {
 
     final points = List.generate(bars.length, point);
 
-    // Gradient fill
+    // Gradient fill — left edge → points → right edge → close
+    // Using 0 and size.width ensures the fill covers the full chart width
+    // Shader bounds from topPad to avoid gradient starting above the chart
+    final fillPath = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      fillPath.lineTo(points[i].dx, points[i].dy);
+    }
+    fillPath
+      ..lineTo(size.width, size.height)
+      ..close();
+
     canvas.drawPath(
-      Path()
-        ..moveTo(points.first.dx, size.height)
-        ..addPolygon(points, false)
-        ..lineTo(points.last.dx, size.height)
-        ..close(),
+      fillPath,
       Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [color.withAlpha(70), color.withAlpha(0)],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+          colors: [color.withAlpha(55), color.withAlpha(0)],
+        ).createShader(Rect.fromLTWH(0, topPad, size.width, chartH))
         ..style = PaintingStyle.fill,
     );
 
@@ -165,7 +187,13 @@ class _LinePainter extends CustomPainter {
     for (int i = 0; i < points.length; i++) {
       final p = points[i];
       canvas.drawCircle(p, 6, Paint()..color = color.withAlpha(30));
-      canvas.drawCircle(p, 3.5, Paint()..color = color..style = PaintingStyle.fill);
+      canvas.drawCircle(
+        p,
+        3.5,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill,
+      );
 
       final val = bars[i].value.toInt();
       if (val > 0) {
@@ -173,9 +201,10 @@ class _LinePainter extends CustomPainter {
           text: TextSpan(
             text: '$val',
             style: TextStyle(
-                fontSize: labelSize,
-                fontWeight: FontWeight.bold,
-                color: color),
+              fontSize: labelSize,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           textDirection: TextDirection.ltr,
         )..layout();

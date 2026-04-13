@@ -97,15 +97,15 @@ class InvoiceTile extends ConsumerWidget {
       },
       onDismissed: (_) {}, // actual work done in confirmDismiss
       background: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const .only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.red,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: .circular(14),
         ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        alignment: .centerRight,
+        padding: const .only(right: 20),
         child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: .center,
           children: [
             Icon(Icons.delete_outline, color: Colors.white, size: 22),
             SizedBox(height: 4),
@@ -149,19 +149,19 @@ class InvoiceTile extends ConsumerWidget {
       onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const .only(bottom: 10),
         decoration: BoxDecoration(
           color: isSelected ? cs.primary.withAlpha(30) : cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
+          borderRadius: .circular(14),
+          border: .all(
             color: isSelected ? cs.primary : cs.outlineVariant.withAlpha(60),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+          padding: const .fromLTRB(14, 12, 8, 12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: .center,
             children: [
               // Selection checkbox or status icon
               if (isSelecting)
@@ -193,7 +193,7 @@ class InvoiceTile extends ConsumerWidget {
                     color: isPaid
                         ? Colors.green.withAlpha(25)
                         : cs.primary.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: .circular(10),
                   ),
                   child: Icon(
                     isPaid ? Icons.check_circle_outline : Icons.receipt_long,
@@ -206,10 +206,10 @@ class InvoiceTile extends ConsumerWidget {
               // Main content
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: .spaceBetween,
                       children: [
                         Text(
                           invoice.invoiceNumber,
@@ -231,8 +231,8 @@ class InvoiceTile extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: .spaceBetween,
+                      crossAxisAlignment: .center,
                       children: [
                         Expanded(
                           child: Text(
@@ -241,13 +241,11 @@ class InvoiceTile extends ConsumerWidget {
                               fontSize: 13,
                               color: cs.onSurface.withAlpha(170),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            overflow: .ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         StatusBadge(isPaid: isPaid),
-                        const SizedBox(width: 4),
-                        _PaymentPill(method: invoice.paymentMethod),
                       ],
                     ),
                     const SizedBox(height: 3),
@@ -303,44 +301,44 @@ class InvoiceTile extends ConsumerWidget {
   }
 }
 
-// ── Payment method pill (shown on tile) ──────────────────────────────────────
-class _PaymentPill extends StatelessWidget {
-  final String method;
-  const _PaymentPill({required this.method});
+// // ── Payment method pill (shown on tile) ──────────────────────────────────────
+// class _PaymentPill extends StatelessWidget {
+//   final String method;
+//   const _PaymentPill({required this.method});
 
-  @override
-  Widget build(BuildContext context) {
-    final (label, color, icon) = switch (method) {
-      'stripe' => (
-        'Stripe',
-        const Color(0xFF635BFF),
-        Icons.credit_card_outlined,
-      ),
-      'other' => ('Other', Colors.blueGrey, Icons.payments_outlined),
-      _ => ('E-Transfer', Colors.green, Icons.account_balance_wallet_outlined),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withAlpha(80)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 9, color: color),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     final (label, color, icon) = switch (method) {
+//       'stripe' => (
+//         'Stripe',
+//         const Color(0xFF635BFF),
+//         Icons.credit_card_outlined,
+//       ),
+//       'other' => ('Other', Colors.blueGrey, Icons.payments_outlined),
+//       _ => ('E-Transfer', Colors.green, Icons.account_balance_wallet_outlined),
+//     };
+//     return Container(
+//       padding: const .symmetric(horizontal: 5, vertical: 2),
+//       decoration: BoxDecoration(
+//         color: color.withAlpha(20),
+//         borderRadius: .circular(20),
+//         border: .all(color: color.withAlpha(80)),
+//       ),
+//       child: Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Icon(icon, size: 9, color: color),
+//           const SizedBox(width: 3),
+//           Text(
+//             label,
+//             style: TextStyle(
+//               fontSize: 9,
+//               fontWeight: FontWeight.w600,
+//               color: color,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
