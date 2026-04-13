@@ -20,7 +20,6 @@ class _TaxReportScreenState extends ConsumerState<TaxReportScreen> {
   Widget build(BuildContext context) {
     final invoicesAsync = ref.watch(invoiceProvider);
     final expensesAsync = ref.watch(expenseProvider);
-    final _ = ref.watch(companyProvider);
     final cs = Theme.of(context).colorScheme;
     final now = DateTime.now();
 

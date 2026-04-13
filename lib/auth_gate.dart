@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/main.dart';
 import 'package:new_invoice_generator/providers/company.dart';
-import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
+import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/home_analytics.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/providers/invoice_filter.dart';
@@ -12,6 +12,7 @@ import 'package:new_invoice_generator/providers/recurring_invoice.dart';
 import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/app_shell.dart';
 import 'package:new_invoice_generator/screens/auth/login.dart';
+import 'package:new_invoice_generator/screens/onboarding.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthGate extends ConsumerStatefulWidget {
@@ -52,10 +53,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         final session = snapshot.data?.session ?? supabase.auth.currentSession;
         final userId = session?.user.id;
 
-        // Detect user change (login, logout, switch account)
         if (userId != _lastUserId) {
           _lastUserId = userId;
-          // Synchronously invalidate before the next frame renders
           _invalidateAll();
         }
 
@@ -68,9 +67,18 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
         if (session == null) return const LoginScreen();
 
-        // ValueKey forces AppShell widget tree to be fully destroyed and
-        // recreated when the user changes, so no stale widget state remains.
-        return AppShell(key: ValueKey(userId));
+        // Check onboarding status from company record
+        final companyAsync = ref.watch(companyProvider);
+        return companyAsync.when(
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          error: (_, _) => AppShell(key: ValueKey(userId)),
+          data: (company) {
+            final onboarded = company['onboarded'] as bool? ?? false;
+            if (!onboarded) return const OnboardingScreen();
+            return AppShell(key: ValueKey(userId));
+          },
+        );
       },
     );
   }

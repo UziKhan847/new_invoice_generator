@@ -7,10 +7,11 @@ class InvoiceRepository {
         .from('invoices')
         .select(
           // Join customers for email, employees via explicit FK hint
-          '*, invoice_items(*), customers(email), employees!invoices_sender_employee_id_fkey(name, role, email)',
+          '*, invoice_items(*), customers(email, phone), employees!invoices_sender_employee_id_fkey(name, role, email)',
         )
         .eq('company_id', companyId)
-        .order('issue_date', ascending: false);
+        .order('issue_date', ascending: false)
+        .order('created_at', ascending: false);
     return response.map<Invoice>((json) => Invoice.fromJson(json)).toList();
   }
 
@@ -27,10 +28,10 @@ class InvoiceRepository {
   }
 
   Future<void> markPaid(String invoiceId) async {
-    await supabase.from('invoices').update({
-      'is_paid': true,
-      'status': 'paid',
-    }).eq('id', invoiceId);
+    await supabase
+        .from('invoices')
+        .update({'is_paid': true, 'status': 'paid'})
+        .eq('id', invoiceId);
   }
 
   Future<void> deleteInvoice(String invoiceId) async {

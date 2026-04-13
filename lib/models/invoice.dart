@@ -6,6 +6,7 @@ class Invoice {
   final String customerName;
   final String? customerId;
   final String? customerEmail; // auto-filled for email dialog
+  final String? customerPhone; // auto-filled for SMS
   final DateTime issueDate;
   final DateTime? dueDate;
   final bool isPaid;
@@ -18,6 +19,14 @@ class Invoice {
   final String? senderEmail;
   // Notes / payment terms shown at bottom of invoice
   final String? notes;
+  // Tax settings — stored at invoice creation time so changes don't affect old invoices
+  final double taxRate; // e.g. 0.13
+  final String taxLabel; // e.g. 'HST'
+  final bool isExport; // true = 0% tax (international customer)
+  // Stripe payment link URL
+  final String? stripePaymentLink;
+  // Payment method: 'etransfer' | 'stripe' | 'other'
+  final String paymentMethod;
   // Company logo — injected at PDF generation time
   final String? companyLogoUrl;
 
@@ -27,6 +36,7 @@ class Invoice {
     required this.customerName,
     this.customerId,
     this.customerEmail,
+    this.customerPhone,
     required this.items,
     DateTime? issueDate,
     this.dueDate,
@@ -37,6 +47,11 @@ class Invoice {
     this.senderRole,
     this.senderEmail,
     this.notes,
+    this.taxRate = 0.13,
+    this.taxLabel = 'HST',
+    this.isExport = false,
+    this.stripePaymentLink,
+    this.paymentMethod = 'etransfer',
     this.companyLogoUrl,
   }) : issueDate = issueDate ?? DateTime.now();
 
@@ -48,7 +63,8 @@ class Invoice {
       items.fold(0, (sum, item) => sum + item.subtotal);
   double get totalDiscountAmount =>
       items.fold(0, (sum, item) => sum + item.discountAmount);
-  double get tax => taxableSubtotal * 0.13;
+  double get effectiveTaxRate => isExport ? 0.0 : taxRate;
+  double get tax => taxableSubtotal * effectiveTaxRate;
   double get total => subtotal + tax;
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
@@ -62,6 +78,7 @@ class Invoice {
       customerId: json['customer_id'] as String?,
       customerEmail:
           cust?['email'] as String? ?? json['customer_email'] as String?,
+      customerPhone: cust?['phone'] as String?,
       issueDate: DateTime.parse(json['issue_date'] ?? json['created_at']),
       dueDate: json['due_date'] != null
           ? DateTime.parse(json['due_date'])
@@ -74,6 +91,11 @@ class Invoice {
       senderRole: emp?['role'] as String?,
       senderEmail: emp?['email'] as String?,
       notes: json['notes'] as String?,
+      taxRate: (json['tax_rate'] as num?)?.toDouble() ?? 0.13,
+      taxLabel: json['tax_label'] as String? ?? 'HST',
+      isExport: json['is_export'] as bool? ?? false,
+      stripePaymentLink: json['stripe_payment_link'] as String?,
+      paymentMethod: json['payment_method'] as String? ?? 'etransfer',
     );
   }
 
@@ -92,6 +114,11 @@ class Invoice {
       'status': status,
       'sender_employee_id': senderEmployeeId,
       'notes': notes,
+      'tax_rate': taxRate,
+      'tax_label': taxLabel,
+      'is_export': isExport,
+      'stripe_payment_link': stripePaymentLink,
+      'payment_method': paymentMethod,
     };
   }
 
@@ -101,6 +128,7 @@ class Invoice {
     String? customerName,
     String? customerId,
     String? customerEmail,
+    String? customerPhone,
     List<InvoiceItem>? items,
     DateTime? issueDate,
     DateTime? dueDate,
@@ -111,6 +139,11 @@ class Invoice {
     String? senderRole,
     String? senderEmail,
     String? notes,
+    double? taxRate,
+    String? taxLabel,
+    bool? isExport,
+    String? stripePaymentLink,
+    String? paymentMethod,
   }) {
     return Invoice(
       id: id,
@@ -118,6 +151,8 @@ class Invoice {
       customerName: customerName ?? this.customerName,
       customerId: customerId ?? this.customerId,
       customerEmail: customerEmail ?? this.customerEmail,
+      customerPhone:
+          customerPhone ?? this.customerPhone, // ignore: unnecessary_this
       items: items ?? this.items,
       issueDate: issueDate ?? this.issueDate,
       dueDate: dueDate ?? this.dueDate,
@@ -128,6 +163,11 @@ class Invoice {
       senderRole: senderRole ?? this.senderRole,
       senderEmail: senderEmail ?? this.senderEmail,
       notes: notes ?? this.notes,
+      taxRate: taxRate ?? this.taxRate,
+      taxLabel: taxLabel ?? this.taxLabel,
+      isExport: isExport ?? this.isExport,
+      stripePaymentLink: stripePaymentLink ?? this.stripePaymentLink,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       companyLogoUrl: companyLogoUrl ?? this.companyLogoUrl,
     );
   }

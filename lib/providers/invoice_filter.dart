@@ -13,8 +13,8 @@ class InvoiceFilterNotifier extends Notifier<InvoiceFilter> {
 
 final invoiceFilterProvider =
     NotifierProvider<InvoiceFilterNotifier, InvoiceFilter>(
-  InvoiceFilterNotifier.new,
-);
+      InvoiceFilterNotifier.new,
+    );
 
 /// Derived provider: filtered + sorted invoice list
 final filteredInvoicesProvider = Provider<AsyncValue<List<Invoice>>>((ref) {
@@ -22,9 +22,15 @@ final filteredInvoicesProvider = Provider<AsyncValue<List<Invoice>>>((ref) {
   final filter = ref.watch(invoiceFilterProvider);
 
   return invoicesAsync.whenData((invoices) {
-    // Sort newest first, then filter
+    // Sort newest first (issue date), then by invoice number descending
+    // as secondary sort for same-day invoices (e.g. test invoices created same day)
     final sorted = [...invoices]
-      ..sort((a, b) => b.issueDate.compareTo(a.issueDate));
+      ..sort((a, b) {
+        final dateCmp = b.issueDate.compareTo(a.issueDate);
+        if (dateCmp != 0) return dateCmp;
+        // Same date: sort by invoice number descending (INV-0019 > INV-0015)
+        return b.invoiceNumber.compareTo(a.invoiceNumber);
+      });
     var result = sorted.where((inv) {
       if (filter.customerId != null && inv.customerId != filter.customerId) {
         return false;
@@ -34,8 +40,11 @@ final filteredInvoicesProvider = Provider<AsyncValue<List<Invoice>>>((ref) {
         return false;
       }
       if (filter.serviceName != null) {
-        final hasService = inv.items.any((item) =>
-            item.description.toLowerCase().contains(filter.serviceName!.toLowerCase()));
+        final hasService = inv.items.any(
+          (item) => item.description.toLowerCase().contains(
+            filter.serviceName!.toLowerCase(),
+          ),
+        );
         if (!hasService) return false;
       }
       if (filter.month != null && inv.issueDate.month != filter.month) {

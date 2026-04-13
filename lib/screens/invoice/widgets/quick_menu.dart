@@ -1,13 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/quick_pdf_preview.dart';
 import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/email.dart';
+import 'package:new_invoice_generator/services/sms.dart';
 import 'package:new_invoice_generator/utils/with_loading_overlay.dart';
 
-enum _Action { markPaid, email, download, preview }
+enum _Action { markPaid, email, sms, download, preview }
 
 class InvoiceQuickMenu extends ConsumerWidget {
   final Invoice invoice;
@@ -30,30 +32,12 @@ class InvoiceQuickMenu extends ConsumerWidget {
       onSelected: (action) async {
         switch (action) {
           case _Action.markPaid:
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: const Text('Mark as paid?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text(
-                      'Mark Paid',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            );
-            if (confirm == true && context.mounted) {
-              await ref.read(invoiceProvider.notifier).markPaid(invoice.id!);
+            if (context.mounted) {
+              await showMarkPaidDialog(
+                context: context,
+                ref: ref,
+                invoice: invoice,
+              );
             }
 
           case _Action.email:
@@ -73,6 +57,14 @@ class InvoiceQuickMenu extends ConsumerWidget {
                   companyLogoUrl: logoUrl,
                 );
               },
+            );
+
+          case _Action.sms:
+            if (!context.mounted) return;
+            await SmsService.sendInvoiceSms(
+              context: context,
+              invoice: invoice,
+              recipientPhone: invoice.customerPhone!,
             );
 
           case _Action.preview:
@@ -109,6 +101,13 @@ class InvoiceQuickMenu extends ConsumerWidget {
           value: _Action.email,
           child: _MenuItem(icon: Icons.email_outlined, label: 'Email'),
         ),
+        if ((Platform.isAndroid || Platform.isIOS) &&
+            invoice.customerPhone != null &&
+            invoice.customerPhone!.isNotEmpty)
+          const PopupMenuItem(
+            value: _Action.sms,
+            child: _MenuItem(icon: Icons.sms_outlined, label: 'Send SMS'),
+          ),
         const PopupMenuItem(
           value: _Action.download,
           child: _MenuItem(icon: Icons.download_outlined, label: 'Download'),

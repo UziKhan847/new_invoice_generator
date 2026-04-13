@@ -381,11 +381,11 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                     final units = double.tryParse(_unitsCtrl.text) ?? 1.0;
                     final rate =
                         double.tryParse(_rateCtrl.text) ?? widget.r.price;
-                    final _ = widget.r.frequencyUnitLabel;
+                    final unitLabel = widget.r.frequencyUnitLabel;
                     // Build a descriptive label e.g. "Quran Lessons (8 hrs)"
                     final label = units == 1.0
                         ? _labelCtrl.text.trim()
-                        : '\${_labelCtrl.text.trim()} (\${_formatUnits(units)} \$unitLabel)';
+                        : '\${_labelCtrl.text.trim()} (\${_formatUnits(units)} $unitLabel)';
 
                     await ref
                         .read(recurringInvoiceProvider.notifier)

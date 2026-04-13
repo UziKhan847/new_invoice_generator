@@ -52,36 +52,56 @@ class InvoiceTile extends ConsumerWidget {
     return Dismissible(
       key: ValueKey(invoice.id),
       direction: DismissDirection.endToStart,
-      confirmDismiss: (_) => showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Delete invoice?'),
-          content: Text(
-              'Invoice ${invoice.invoiceNumber} will be permanently deleted.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete',
-                  style: TextStyle(color: Colors.white)),
+      // confirmDismiss handles BOTH the confirmation dialog AND the actual delete.
+      // This avoids "Paused on Exception" caused by calling async deleteInvoice
+      // inside the sync onDismissed callback on an already-dismissed widget.
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Delete invoice?'),
+            content: Text(
+              'Invoice ${invoice.invoiceNumber} will be permanently deleted.',
             ),
-          ],
-        ),
-      ),
-      onDismissed: (_) {
-        ref.read(invoiceProvider.notifier).deleteInvoice(invoice.id!);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Invoice ${invoice.invoiceNumber} deleted')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
         );
+        if (confirmed == true) {
+          await ref.read(invoiceProvider.notifier).deleteInvoice(invoice.id!);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context)
+              ..clearSnackBars()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text('Invoice ${invoice.invoiceNumber} deleted'),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+          }
+          return true; // allow dismissal
+        }
+        return false; // cancel dismissal
       },
+      onDismissed: (_) {}, // actual work done in confirmDismiss
       background: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-            color: Colors.red, borderRadius: BorderRadius.circular(14)),
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(14),
+        ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         child: const Column(
@@ -89,11 +109,14 @@ class InvoiceTile extends ConsumerWidget {
           children: [
             Icon(Icons.delete_outline, color: Colors.white, size: 22),
             SizedBox(height: 4),
-            Text('Delete',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -105,7 +128,8 @@ class InvoiceTile extends ConsumerWidget {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (_) => InvoiceDetailScreen(invoiceId: invoice.id!)),
+            builder: (_) => InvoiceDetailScreen(invoiceId: invoice.id!),
+          ),
         ),
         onLongPress: onLongPress,
       ),
@@ -127,9 +151,7 @@ class InvoiceTile extends ConsumerWidget {
         duration: const Duration(milliseconds: 150),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? cs.primary.withAlpha(30)
-              : cs.surfaceContainerLow,
+          color: isSelected ? cs.primary.withAlpha(30) : cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? cs.primary : cs.outlineVariant.withAlpha(60),
@@ -150,8 +172,11 @@ class InvoiceTile extends ConsumerWidget {
                           key: const ValueKey('checked'),
                           radius: 20,
                           backgroundColor: cs.primary,
-                          child: const Icon(Icons.check,
-                              color: Colors.white, size: 18),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         )
                       : CircleAvatar(
                           key: const ValueKey('unchecked'),
@@ -171,9 +196,7 @@ class InvoiceTile extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    isPaid
-                        ? Icons.check_circle_outline
-                        : Icons.receipt_long,
+                    isPaid ? Icons.check_circle_outline : Icons.receipt_long,
                     color: isPaid ? Colors.green : cs.primary,
                     size: 20,
                   ),
@@ -188,16 +211,22 @@ class InvoiceTile extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(invoice.invoiceNumber,
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: cs.onSurface)),
-                        Text('\$${invoice.total.toStringAsFixed(2)}',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                color: cs.onSurface)),
+                        Text(
+                          invoice.invoiceNumber,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                        Text(
+                          '\$${invoice.total.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: cs.onSurface,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 3),
@@ -206,41 +235,53 @@ class InvoiceTile extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: Text(invoice.customerName,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: cs.onSurface.withAlpha(170)),
-                              overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            invoice.customerName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: cs.onSurface.withAlpha(170),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         StatusBadge(isPaid: isPaid),
+                        const SizedBox(width: 4),
+                        _PaymentPill(method: invoice.paymentMethod),
                       ],
                     ),
                     const SizedBox(height: 3),
                     Row(
                       children: [
                         if (invoice.senderName != null) ...[
-                          Icon(Icons.person_outline,
-                              size: 11,
-                              color: cs.onSurface.withAlpha(110)),
+                          Icon(
+                            Icons.person_outline,
+                            size: 11,
+                            color: cs.onSurface.withAlpha(110),
+                          ),
                           const SizedBox(width: 3),
-                          Text(invoice.senderName!,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: cs.onSurface.withAlpha(130))),
+                          Text(
+                            invoice.senderName!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: cs.onSurface.withAlpha(130),
+                            ),
+                          ),
                           const SizedBox(width: 10),
                         ],
-                        Icon(Icons.calendar_today_outlined,
-                            size: 11, color: cs.onSurface.withAlpha(110)),
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 11,
+                          color: cs.onSurface.withAlpha(110),
+                        ),
                         const SizedBox(width: 3),
                         Text(
-                            invoice.issueDate
-                                .toLocal()
-                                .toString()
-                                .split(' ')[0],
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: cs.onSurface.withAlpha(130))),
+                          invoice.issueDate.toLocal().toString().split(' ')[0],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: cs.onSurface.withAlpha(130),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -257,6 +298,48 @@ class InvoiceTile extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Payment method pill (shown on tile) ──────────────────────────────────────
+class _PaymentPill extends StatelessWidget {
+  final String method;
+  const _PaymentPill({required this.method});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = switch (method) {
+      'stripe' => (
+        'Stripe',
+        const Color(0xFF635BFF),
+        Icons.credit_card_outlined,
+      ),
+      'other' => ('Other', Colors.blueGrey, Icons.payments_outlined),
+      _ => ('E-Transfer', Colors.green, Icons.account_balance_wallet_outlined),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 9, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

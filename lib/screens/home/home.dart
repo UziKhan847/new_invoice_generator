@@ -8,7 +8,7 @@ import 'package:new_invoice_generator/screens/home/widgets/invoice_tile.dart';
 import 'package:new_invoice_generator/screens/home/widgets/paid_unpaid_donut.dart';
 import 'package:new_invoice_generator/screens/home/widgets/revenue_bar_chart.dart';
 import 'package:new_invoice_generator/screens/home/widgets/stat_row.dart';
-import 'package:new_invoice_generator/screens/invoice/create.dart';
+import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

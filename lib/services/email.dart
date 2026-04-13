@@ -92,6 +92,37 @@ class EmailService {
             '<strong>${invoice.dueDate!.toLocal().toString().split(' ')[0]}</strong></p>'
         : '';
 
+    // Payment section — conditional on invoice.paymentMethod
+    final paymentHtml = () {
+      if (invoice.isPaid) {
+        return '<div style="margin-top:16px;padding:12px;background:#f0fff4;border-radius:8px;border:1px solid #86efac">'
+            '<p style="margin:0;font-size:13px;color:#16a34a;font-weight:bold">✓ PAID</p></div>';
+      }
+      switch (invoice.paymentMethod) {
+        case 'etransfer':
+          if (invoice.senderEmail == null) return '';
+          return '<div style="margin-top:16px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac">'
+              '<p style="margin:0;font-size:13px;font-weight:bold;color:#16a34a">💸 Pay via E-Transfer</p>'
+              '<p style="margin:6px 0 0;font-size:13px;color:#333">Send to: '
+              '<a href="mailto:\${invoice.senderEmail}">\${invoice.senderEmail}</a></p>'
+              '<p style="margin:4px 0 0;font-size:11px;color:#888">'
+              'Please include invoice #\${invoice.invoiceNumber} in the message.</p></div>';
+        case 'stripe':
+          final linkPart = invoice.stripePaymentLink?.isNotEmpty == true
+              ? '<div style="text-align:center;margin-top:12px">'
+                '<a href="\${invoice.stripePaymentLink}" style="display:inline-block;padding:14px 32px;'
+                'background:#635bff;color:white;text-decoration:none;border-radius:8px;font-size:16px;font-weight:bold">'
+                '💳 Pay Now — \$\${invoice.total.toStringAsFixed(2)} CAD</a>'
+                '<p style="margin:8px 0 0;font-size:11px;color:#aaa">Secure payment via Stripe. Amount in CAD.</p></div>'
+              : '<p style="font-size:12px;color:#555;margin-top:6px">Contact sender for payment link.</p>';
+          return '<div style="margin-top:16px;padding:12px;background:#f5f3ff;border-radius:8px;border:1px solid #c4b5fd">'
+              '<p style="margin:0;font-size:13px;font-weight:bold;color:#635bff">💳 Pay Online via Stripe</p>'
+              '$linkPart</div>';
+        default:
+          return ''; // 'other' — no payment instructions
+      }
+    }();
+
     final senderHtml = invoice.senderName != null
         ? '''
         <div style="margin-top:16px;padding:12px;background:#f8f8f8;border-radius:8px">
@@ -157,9 +188,11 @@ class EmailService {
         </td>
       </tr>
       <tr>
-        <td style="padding:4px 12px;text-align:right;color:#555">Tax (13%)</td>
+        <td style="padding:4px 12px;text-align:right;color:#555">
+          \${invoice.isExport ? 'Export — 0% Tax' : '${invoice.taxLabel}'}
+        </td>
         <td style="padding:4px 12px;text-align:right">
-          \$${invoice.tax.toStringAsFixed(2)}
+          \$\${invoice.tax.toStringAsFixed(2)}
         </td>
       </tr>
       <tr style="font-size:16px;font-weight:bold">
@@ -170,6 +203,7 @@ class EmailService {
       </tr>
     </table>
 
+    $paymentHtml
     $senderHtml
     $notesHtml
 
@@ -207,10 +241,22 @@ class EmailService {
     lines.writeln('Subtotal: \$${invoice.subtotal.toStringAsFixed(2)}');
     lines.writeln('Tax (13%): \$${invoice.tax.toStringAsFixed(2)}');
     lines.writeln('TOTAL: \$${invoice.total.toStringAsFixed(2)}');
-    if (invoice.senderEmail != null) {
-      lines.writeln();
-      lines.writeln('Payment by e-transfer to: ${invoice.senderEmail}');
-      lines.writeln('Please include invoice #${invoice.invoiceNumber} in the message.');
+    switch (invoice.paymentMethod) {
+      case 'etransfer':
+        if (invoice.senderEmail != null) {
+          lines.writeln();
+          lines.writeln('Pay via E-Transfer to: ${invoice.senderEmail}');
+          lines.writeln('Please include invoice #${invoice.invoiceNumber} in the message.');
+        }
+      case 'stripe':
+        lines.writeln();
+        if (invoice.stripePaymentLink?.isNotEmpty == true) {
+          lines.writeln('Pay via Stripe: ${invoice.stripePaymentLink}');
+        } else {
+          lines.writeln('Pay via Stripe — contact sender for payment link.');
+        }
+      default:
+        break;
     }
     if (invoice.notes?.isNotEmpty == true) {
       lines.writeln();

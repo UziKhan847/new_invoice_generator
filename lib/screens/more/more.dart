@@ -5,6 +5,7 @@ import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/company_profile.dart';
 import 'package:new_invoice_generator/screens/employees.dart';
 import 'package:new_invoice_generator/screens/expense.dart';
+import 'package:new_invoice_generator/screens/guide.dart';
 import 'package:new_invoice_generator/screens/more/widgets/company_logo_card.dart';
 import 'package:new_invoice_generator/screens/more/widgets/more_nav_tile.dart';
 import 'package:new_invoice_generator/screens/recurring_invoices.dart';
@@ -23,6 +24,7 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+
           // ── Company card ─────────────────────────────────────────
           const CompanyLogoCard(),
           const SizedBox(height: 16),
@@ -85,6 +87,16 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // ── Account ──────────────────────────────────────────────
+          const MoreSectionHeader(title: 'Help'),
+          Card(
+            child: MoreNavTile(
+              icon: Icons.menu_book_outlined,
+              label: 'How to Use This App',
+              onTap: () => _push(context, const GuideScreen()),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           const MoreSectionHeader(title: 'Account'),
           Card(
             child: MoreNavTile(
@@ -109,16 +121,18 @@ class MoreScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Log out?'),
-        content: const Text('You will be returned to the login screen.'),
+        content:
+            const Text('You will be returned to the login screen.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log out', style: TextStyle(color: Colors.white)),
+            child: const Text('Log out',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

@@ -4,10 +4,6 @@ import 'package:new_invoice_generator/repositories/invoice.dart';
 import 'package:new_invoice_generator/services/invoice_number.dart';
 import '../models/invoice.dart';
 
-final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(
-  InvoiceNotifier.new,
-);
-
 class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
   final repo = InvoiceRepository();
 
@@ -37,6 +33,11 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
       senderRole: invoice.senderRole,
       senderEmail: invoice.senderEmail,
       notes: invoice.notes,
+      taxRate: invoice.taxRate,
+      taxLabel: invoice.taxLabel,
+      isExport: invoice.isExport,
+      stripePaymentLink: invoice.stripePaymentLink,
+      paymentMethod: invoice.paymentMethod,
     );
     await repo.createInvoice(numbered, company['id']);
     ref.invalidateSelf();
@@ -76,3 +77,6 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
   }
 }
 
+final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(
+  InvoiceNotifier.new,
+);
