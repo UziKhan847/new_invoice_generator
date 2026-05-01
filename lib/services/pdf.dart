@@ -383,7 +383,7 @@ class PdfService {
                     else ...[
                       if (invoice.dueDate != null)
                         pw.Text(
-                          'Due by: \${invoice.dueDate!.toLocal().toString().split(\' \')[0]}',
+                          "Due by: ${invoice.dueDate!.toLocal().toString().split('')[0]}",
                           style: const pw.TextStyle(
                             fontSize: 11,
                             color: PdfColors.orange700,

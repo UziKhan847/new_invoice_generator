@@ -104,15 +104,15 @@ class EmailService {
           return '<div style="margin-top:16px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac">'
               '<p style="margin:0;font-size:13px;font-weight:bold;color:#16a34a">💸 Pay via E-Transfer</p>'
               '<p style="margin:6px 0 0;font-size:13px;color:#333">Send to: '
-              '<a href="mailto:\${invoice.senderEmail}">\${invoice.senderEmail}</a></p>'
+              '<a href="mailto:${invoice.senderEmail}">${invoice.senderEmail}</a></p>'
               '<p style="margin:4px 0 0;font-size:11px;color:#888">'
-              'Please include invoice #\${invoice.invoiceNumber} in the message.</p></div>';
+              'Please include invoice #${invoice.invoiceNumber} in the message.</p></div>';
         case 'stripe':
           final linkPart = invoice.stripePaymentLink?.isNotEmpty == true
               ? '<div style="text-align:center;margin-top:12px">'
-                '<a href="\${invoice.stripePaymentLink}" style="display:inline-block;padding:14px 32px;'
+                '<a href="${invoice.stripePaymentLink}" style="display:inline-block;padding:14px 32px;'
                 'background:#635bff;color:white;text-decoration:none;border-radius:8px;font-size:16px;font-weight:bold">'
-                '💳 Pay Now — \$\${invoice.total.toStringAsFixed(2)} CAD</a>'
+                '💳 Pay Now — \$${invoice.total.toStringAsFixed(2)} CAD</a>'
                 '<p style="margin:8px 0 0;font-size:11px;color:#aaa">Secure payment via Stripe. Amount in CAD.</p></div>'
               : '<p style="font-size:12px;color:#555;margin-top:6px">Contact sender for payment link.</p>';
           return '<div style="margin-top:16px;padding:12px;background:#f5f3ff;border-radius:8px;border:1px solid #c4b5fd">'
@@ -189,10 +189,10 @@ class EmailService {
       </tr>
       <tr>
         <td style="padding:4px 12px;text-align:right;color:#555">
-          \${invoice.isExport ? 'Export — 0% Tax' : '${invoice.taxLabel}'}
+          ${invoice.isExport ? 'Export — 0% Tax' : invoice.taxLabel}
         </td>
         <td style="padding:4px 12px;text-align:right">
-          \$\${invoice.tax.toStringAsFixed(2)}
+          \$${invoice.tax.toStringAsFixed(2)}
         </td>
       </tr>
       <tr style="font-size:16px;font-weight:bold">
