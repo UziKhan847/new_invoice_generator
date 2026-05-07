@@ -37,6 +37,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   // Invoice meta
   DateTime? _dueDate;
   bool _isExport = false;
+  bool _isPrivate = false;
   PaymentMethod _paymentMethod = PaymentMethod.etransfer;
 
   // Controllers for simple text fields
@@ -100,6 +101,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             taxRate: _taxRate(company),
             taxLabel: _taxLabel(company),
             isExport: _isExport,
+            isPrivate: _isPrivate,
             paymentMethod: _paymentMethod.value,
             stripePaymentLink:
                 _paymentMethod == PaymentMethod.stripe &&
@@ -211,6 +213,31 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             stripeLink: _stripeLinkCtrl.text,
             stripeLinkCtrl: _stripeLinkCtrl,
             onMethodChanged: (m) => setState(() => _paymentMethod = m),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Private invoice toggle ───────────────────────────────
+          Card(
+            child: SwitchListTile(
+              value: _isPrivate,
+              onChanged: (v) => setState(() => _isPrivate = v),
+              secondary: Icon(
+                Icons.lock_outline,
+                color: _isPrivate
+                    ? Colors.purple
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(120),
+              ),
+              title: const Text('Private Invoice'),
+              subtitle: Text(
+                _isPrivate
+                    ? 'Excluded from tax reports, analytics, and totals.'
+                    : 'Standard invoice — included in all reports.',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
 

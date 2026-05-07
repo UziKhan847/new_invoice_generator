@@ -33,7 +33,9 @@ class _TaxReportScreenState extends ConsumerState<TaxReportScreen> {
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (expenses) {
             final yearInvoices = invoices
-                .where((i) => i.isPaid && i.issueDate.year == _year)
+                .where(
+                  (i) => i.isPaid && !i.isPrivate && i.issueDate.year == _year,
+                )
                 .toList();
             final yearExpenses = expenses
                 .where((e) => e.date.year == _year)

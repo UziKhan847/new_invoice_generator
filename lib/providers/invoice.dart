@@ -17,8 +17,8 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
 
   Future<void> addInvoice(Invoice invoice) async {
     final company = await ref.read(companyProvider.future);
-    final invoiceNumber =
-        await InvoiceNumberService().generateNextInvoiceNumber(company['id']);
+    final invoiceNumber = await InvoiceNumberService()
+        .generateNextInvoiceNumber(company['id']);
     // Preserve ALL fields from the passed invoice — do not reconstruct
     final numbered = Invoice(
       invoiceNumber: invoiceNumber,

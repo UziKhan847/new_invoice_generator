@@ -3,7 +3,9 @@ import 'package:new_invoice_generator/main.dart';
 class AnalyticsRepository {
   /// Monthly revenue for the past N months — queries full DB via view
   Future<List<Map<String, dynamic>>> monthlyRevenue(
-      String companyId, {int months = 12}) async {
+    String companyId, {
+    int months = 12,
+  }) async {
     final cutoff = DateTime.now().subtract(Duration(days: months * 31));
     final response = await supabase
         .from('monthly_revenue')
@@ -19,7 +21,8 @@ class AnalyticsRepository {
     final response = await supabase
         .from('invoices')
         .select('total, is_paid')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('is_private', false);
 
     double paid = 0;
     double unpaid = 0;
@@ -36,7 +39,9 @@ class AnalyticsRepository {
 
   /// Invoice count per month for line chart
   Future<List<Map<String, dynamic>>> invoiceCountByMonth(
-      String companyId, {int months = 12}) async {
+    String companyId, {
+    int months = 12,
+  }) async {
     final cutoff = DateTime.now().subtract(Duration(days: months * 31));
     final response = await supabase
         .from('monthly_revenue')
@@ -50,15 +55,18 @@ class AnalyticsRepository {
   /// Summary stats — all from DB
   Future<Map<String, dynamic>> summaryStats(String companyId) async {
     final now = DateTime.now();
-    final monthStart =
-        DateTime(now.year, now.month, 1).toIso8601String().split('T')[0];
-    final yearStart =
-        DateTime(now.year, 1, 1).toIso8601String().split('T')[0];
+    final monthStart = DateTime(
+      now.year,
+      now.month,
+      1,
+    ).toIso8601String().split('T')[0];
+    final yearStart = DateTime(now.year, 1, 1).toIso8601String().split('T')[0];
 
     final all = await supabase
         .from('invoices')
         .select('total, is_paid, issue_date')
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('is_private', false);
 
     double totalRevenue = 0;
     double monthRevenue = 0;

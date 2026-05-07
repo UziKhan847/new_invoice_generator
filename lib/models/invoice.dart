@@ -23,6 +23,7 @@ class Invoice {
   final double taxRate; // e.g. 0.13
   final String taxLabel; // e.g. 'HST'
   final bool isExport; // true = 0% tax (international customer)
+  final bool isPrivate; // true = excluded from tax reports and analytics
   // Stripe payment link URL
   final String? stripePaymentLink;
   // Payment method: 'etransfer' | 'stripe' | 'other'
@@ -50,6 +51,7 @@ class Invoice {
     this.taxRate = 0.13,
     this.taxLabel = 'HST',
     this.isExport = false,
+    this.isPrivate = false,
     this.stripePaymentLink,
     this.paymentMethod = 'etransfer',
     this.companyLogoUrl,
@@ -94,6 +96,7 @@ class Invoice {
       taxRate: (json['tax_rate'] as num?)?.toDouble() ?? 0.13,
       taxLabel: json['tax_label'] as String? ?? 'HST',
       isExport: json['is_export'] as bool? ?? false,
+      isPrivate: json['is_private'] as bool? ?? false,
       stripePaymentLink: json['stripe_payment_link'] as String?,
       paymentMethod: json['payment_method'] as String? ?? 'etransfer',
     );
@@ -117,6 +120,7 @@ class Invoice {
       'tax_rate': taxRate,
       'tax_label': taxLabel,
       'is_export': isExport,
+      'is_private': isPrivate,
       'stripe_payment_link': stripePaymentLink,
       'payment_method': paymentMethod,
     };
@@ -142,6 +146,7 @@ class Invoice {
     double? taxRate,
     String? taxLabel,
     bool? isExport,
+    bool? isPrivate,
     String? stripePaymentLink,
     String? paymentMethod,
   }) {
@@ -166,6 +171,7 @@ class Invoice {
       taxRate: taxRate ?? this.taxRate,
       taxLabel: taxLabel ?? this.taxLabel,
       isExport: isExport ?? this.isExport,
+      isPrivate: isPrivate ?? this.isPrivate,
       stripePaymentLink: stripePaymentLink ?? this.stripePaymentLink,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       companyLogoUrl: companyLogoUrl ?? this.companyLogoUrl,

@@ -97,15 +97,15 @@ class InvoiceTile extends ConsumerWidget {
       },
       onDismissed: (_) {}, // actual work done in confirmDismiss
       background: Container(
-        margin: const .only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.red,
-          borderRadius: .circular(14),
+          borderRadius: BorderRadius.circular(14),
         ),
-        alignment: .centerRight,
-        padding: const .only(right: 20),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
         child: const Column(
-          mainAxisAlignment: .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.delete_outline, color: Colors.white, size: 22),
             SizedBox(height: 4),
@@ -149,19 +149,19 @@ class InvoiceTile extends ConsumerWidget {
       onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        margin: const .only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: isSelected ? cs.primary.withAlpha(30) : cs.surfaceContainerLow,
-          borderRadius: .circular(14),
-          border: .all(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
             color: isSelected ? cs.primary : cs.outlineVariant.withAlpha(60),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Padding(
-          padding: const .fromLTRB(14, 12, 8, 12),
+          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
           child: Row(
-            crossAxisAlignment: .center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Selection checkbox or status icon
               if (isSelecting)
@@ -193,7 +193,7 @@ class InvoiceTile extends ConsumerWidget {
                     color: isPaid
                         ? Colors.green.withAlpha(25)
                         : cs.primary.withAlpha(25),
-                    borderRadius: .circular(10),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     isPaid ? Icons.check_circle_outline : Icons.receipt_long,
@@ -206,18 +206,32 @@ class InvoiceTile extends ConsumerWidget {
               // Main content
               Expanded(
                 child: Column(
-                  crossAxisAlignment: .start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: .spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          invoice.invoiceNumber,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: cs.onSurface,
-                          ),
+                        Row(
+                          children: [
+                            if (invoice.isPrivate) ...[
+                              const Icon(
+                                Icons.lock_outline,
+                                size: 12,
+                                color: Colors.purple,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(
+                              invoice.invoiceNumber,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: invoice.isPrivate
+                                    ? Colors.purple
+                                    : cs.onSurface,
+                              ),
+                            ),
+                          ],
                         ),
                         Text(
                           '\$${invoice.total.toStringAsFixed(2)}',
@@ -231,8 +245,8 @@ class InvoiceTile extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Row(
-                      mainAxisAlignment: .spaceBetween,
-                      crossAxisAlignment: .center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
@@ -241,7 +255,7 @@ class InvoiceTile extends ConsumerWidget {
                               fontSize: 13,
                               color: cs.onSurface.withAlpha(170),
                             ),
-                            overflow: .ellipsis,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -300,45 +314,3 @@ class InvoiceTile extends ConsumerWidget {
     );
   }
 }
-
-// // ── Payment method pill (shown on tile) ──────────────────────────────────────
-// class _PaymentPill extends StatelessWidget {
-//   final String method;
-//   const _PaymentPill({required this.method});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final (label, color, icon) = switch (method) {
-//       'stripe' => (
-//         'Stripe',
-//         const Color(0xFF635BFF),
-//         Icons.credit_card_outlined,
-//       ),
-//       'other' => ('Other', Colors.blueGrey, Icons.payments_outlined),
-//       _ => ('E-Transfer', Colors.green, Icons.account_balance_wallet_outlined),
-//     };
-//     return Container(
-//       padding: const .symmetric(horizontal: 5, vertical: 2),
-//       decoration: BoxDecoration(
-//         color: color.withAlpha(20),
-//         borderRadius: .circular(20),
-//         border: .all(color: color.withAlpha(80)),
-//       ),
-//       child: Row(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           Icon(icon, size: 9, color: color),
-//           const SizedBox(width: 3),
-//           Text(
-//             label,
-//             style: TextStyle(
-//               fontSize: 9,
-//               fontWeight: FontWeight.w600,
-//               color: color,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }

@@ -13,6 +13,7 @@ import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/app_shell.dart';
 import 'package:new_invoice_generator/screens/auth/login.dart';
 import 'package:new_invoice_generator/screens/onboarding.dart';
+import 'package:new_invoice_generator/services/recurring_invoice_runner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthGate extends ConsumerStatefulWidget {
@@ -22,7 +23,8 @@ class AuthGate extends ConsumerStatefulWidget {
   ConsumerState<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends ConsumerState<AuthGate> {
+class _AuthGateState extends ConsumerState<AuthGate>
+    with WidgetsBindingObserver {
   late final Stream<AuthState> _authStream;
   String? _lastUserId;
 
@@ -31,6 +33,36 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     super.initState();
     _authStream = supabase.auth.onAuthStateChange;
     _lastUserId = supabase.auth.currentSession?.user.id;
+    WidgetsBinding.instance.addObserver(this);
+    // Run checks once on first launch
+    _runBackgroundChecks();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-run checks when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      _runBackgroundChecks();
+    }
+  }
+
+  Future<void> _runBackgroundChecks() async {
+    if (supabase.auth.currentSession == null) return;
+    // Run in parallel — both are fire-and-forget, failures are silent
+    await Future.wait([
+      RecurringInvoiceRunner.checkAndGenerate(),
+      RecurringInvoiceRunner.checkOverdue(),
+    ]);
+    // Invalidate invoice provider so new auto-generated invoices show up
+    if (mounted) {
+      ref.invalidate(invoiceProvider);
+    }
   }
 
   void _invalidateAll() {
