@@ -58,22 +58,34 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
 
   /// Duplicates an existing invoice: same items/customer/sender/notes,
   /// new invoice number, today's issue date, unpaid status.
+  /// Build a duplicate Invoice object preserving ALL settings except
+  /// invoice number, issue date, and paid status. Doesn't save —
+  /// the caller decides whether to edit or save directly.
+  Invoice buildDuplicate(Invoice source) => Invoice(
+    invoiceNumber: '',
+    customerName: source.customerName,
+    customerId: source.customerId,
+    customerEmail: source.customerEmail,
+    customerPhone: source.customerPhone,
+    items: source.items,
+    issueDate: DateTime.now(),
+    dueDate: source.dueDate,
+    senderEmployeeId: source.senderEmployeeId,
+    senderName: source.senderName,
+    senderRole: source.senderRole,
+    senderEmail: source.senderEmail,
+    notes: source.notes,
+    taxRate: source.taxRate,
+    taxLabel: source.taxLabel,
+    isExport: source.isExport,
+    isPrivate: source.isPrivate,
+    stripePaymentLink: source.stripePaymentLink,
+    paymentMethod: source.paymentMethod,
+  );
+
+  /// Duplicate and save immediately (no editing).
   Future<void> duplicateInvoice(Invoice source) async {
-    final duplicate = Invoice(
-      invoiceNumber: '', // will be assigned in addInvoice
-      customerName: source.customerName,
-      customerId: source.customerId,
-      customerEmail: source.customerEmail,
-      items: source.items,
-      issueDate: DateTime.now(),
-      dueDate: source.dueDate,
-      senderEmployeeId: source.senderEmployeeId,
-      senderName: source.senderName,
-      senderRole: source.senderRole,
-      senderEmail: source.senderEmail,
-      notes: source.notes,
-    );
-    await addInvoice(duplicate);
+    await addInvoice(buildDuplicate(source));
   }
 }
 

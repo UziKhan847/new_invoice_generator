@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/employee.dart';
 import 'package:new_invoice_generator/models/recurring_invoice.dart';
+import 'package:new_invoice_generator/utils/number_format.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
@@ -348,7 +349,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                   ...employees.map(
                     (e) => DropdownMenuItem(
                       value: e.id,
-                      child: Text('${e.name} · ${e.role}'),
+                      child: Text('\${e.name} · \${e.role}'),
                     ),
                   ),
                 ],
@@ -399,16 +400,18 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                           senderRole: sender?.role,
                           senderEmail: sender?.email,
                         );
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invoice generated!')),
-                    );
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invoice generated!')),
+                      );
+                    }
                   } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Error: \$e')));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: \$e')));
+                    }
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }
@@ -424,15 +427,11 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
       ],
     );
   }
+
+  String _formatUnits(double v) => NumFmt.quantity(v);
 }
 
 // ── Edit recurring template ───────────────────────────────────────────────────
-String _formatUnits(double v) {
-  // Show as integer if whole number, otherwise show up to 2 decimal places
-  if (v == v.truncateToDouble()) return v.toInt().toString();
-  return v.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '');
-}
-
 class _EditRecurringDialog extends ConsumerStatefulWidget {
   final RecurringInvoice r;
   const _EditRecurringDialog({required this.r});
@@ -550,10 +549,11 @@ class _EditRecurringDialogState extends ConsumerState<_EditRecurringDialog> {
                         );
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }
@@ -758,10 +758,11 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
                         );
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }

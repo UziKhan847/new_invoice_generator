@@ -14,7 +14,10 @@ import 'package:new_invoice_generator/screens/invoice/create/widgets/payment_met
 import 'package:new_invoice_generator/screens/invoice/create/widgets/sender_section.dart';
 
 class CreateInvoiceScreen extends ConsumerStatefulWidget {
-  const CreateInvoiceScreen({super.key});
+  /// Optional invoice to prefill — used for editing duplicates.
+  /// Fields are copied into form state on init; user can change them before saving.
+  final Invoice? prefill;
+  const CreateInvoiceScreen({super.key, this.prefill});
 
   @override
   ConsumerState<CreateInvoiceScreen> createState() =>
@@ -43,6 +46,35 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   // Controllers for simple text fields
   final _stripeLinkCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.prefill;
+    if (p != null) {
+      _customerId = p.customerId;
+      _customerName = p.customerName;
+      _customerEmail = p.customerEmail;
+      _customerPhone = p.customerPhone;
+      // Employee — minimally reconstruct from invoice fields
+      if (p.senderEmployeeId != null) {
+        _employee = Employee(
+          id: p.senderEmployeeId!,
+          name: p.senderName ?? '',
+          role: p.senderRole ?? '',
+          email: p.senderEmail ?? '',
+          phone: '',
+        );
+      }
+      _items.addAll(p.items);
+      _dueDate = p.dueDate;
+      _isExport = p.isExport;
+      _isPrivate = p.isPrivate;
+      _paymentMethod = PaymentMethod.fromValue(p.paymentMethod);
+      _stripeLinkCtrl.text = p.stripePaymentLink ?? '';
+      _notesCtrl.text = p.notes ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -119,7 +151,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final services = ref.watch(serviceProvider).asData?.value ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Invoice')),
+      appBar: AppBar(
+        title: Text(
+          widget.prefill != null ? 'Duplicate Invoice' : 'Create Invoice',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/auth_gate.dart';
 import 'package:new_invoice_generator/keys.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
@@ -60,22 +61,14 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
+    final appMode = ref.watch(themeProvider);
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Invoice Generator',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      themeMode: themeMode,
+      theme: AppThemes.light(),
+      darkTheme: appMode == AppThemeMode.oled
+          ? AppThemes.oled()
+          : AppThemes.dark(),
+      themeMode: appMode.flutterMode,
       home: const AuthGate(),
     );
   }

@@ -27,7 +27,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final cs = theme.colorScheme;
     final analyticsAsync = ref.watch(homeAnalyticsProvider);
     final invoicesAsync = ref.watch(invoiceProvider);
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    final themeMode = ref.watch(themeProvider);
 
     return Scaffold(
       body: CustomScrollView(
@@ -39,9 +39,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title: const Text('Overview'),
             actions: [
               IconButton(
-                tooltip: isDark ? 'Light mode' : 'Dark mode',
-                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-                onPressed: () => ref.read(themeProvider.notifier).toggle(),
+                tooltip: 'Theme: ${themeMode.label} (tap to cycle)',
+                icon: Icon(themeMode.icon),
+                onPressed: () => ref.read(themeProvider.notifier).cycle(),
               ),
               IconButton(
                 icon: const Icon(Icons.refresh),
@@ -102,11 +102,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       builder: (ctx) {
                                         // Direct from invoiceProvider — instantly reactive
                                         final invs =
-                                            ref
-                                                .watch(invoiceProvider)
-                                                .asData
-                                                ?.value ??
-                                            [];
+                                            (ref
+                                                        .watch(invoiceProvider)
+                                                        .asData
+                                                        ?.value ??
+                                                    [])
+                                                .where((i) => !i.isPrivate)
+                                                .toList();
                                         final p = invs.fold(
                                           0.0,
                                           (s, i) =>

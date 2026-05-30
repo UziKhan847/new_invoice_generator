@@ -17,14 +17,13 @@ class MoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    final themeMode = ref.watch(themeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('More')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
           // ── Company card ─────────────────────────────────────────
           const CompanyLogoCard(),
           const SizedBox(height: 16),
@@ -32,11 +31,65 @@ class MoreScreen extends ConsumerWidget {
           // ── Settings ─────────────────────────────────────────────
           const MoreSectionHeader(title: 'Settings'),
           Card(
-            child: SwitchListTile(
-              title: const Text('Dark Mode'),
-              secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
-              value: isDark,
-              onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        themeMode.icon,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Theme',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<AppThemeMode>(
+                    segments: AppThemeMode.values
+                        .map(
+                          (m) => ButtonSegment<AppThemeMode>(
+                            value: m,
+                            label: Text(
+                              m.label,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            icon: Icon(m.icon, size: 16),
+                          ),
+                        )
+                        .toList(),
+                    selected: {themeMode},
+                    onSelectionChanged: (s) =>
+                        ref.read(themeProvider.notifier).set(s.first),
+                    style: SegmentedButton.styleFrom(
+                      minimumSize: const Size(0, 38),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    themeMode == AppThemeMode.oled
+                        ? 'Pure black background — saves battery on OLED screens.'
+                        : themeMode == AppThemeMode.dark
+                        ? 'Soft dark greys — easy on the eyes at night.'
+                        : 'Default light theme.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withAlpha(140),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -121,18 +174,16 @@ class MoreScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Log out?'),
-        content:
-            const Text('You will be returned to the login screen.'),
+        content: const Text('You will be returned to the login screen.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log out',
-                style: TextStyle(color: Colors.white)),
+            child: const Text('Log out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
