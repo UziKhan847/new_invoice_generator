@@ -15,34 +15,29 @@ class CustomerNotifier extends AsyncNotifier<List<Customer>> {
 
   Future<void> addCustomer(Customer c) async {
     final company = await ref.read(companyProvider.future);
-    await repo.addCustomer(
-      company['id'],
-      c.name,
-      c.email,
-      c.address,
-      c.phone,
-    );
-    // Reload from Supabase
-    final raw = await repo.fetchCustomers(company['id']);
+    await repo.addCustomer(company['id'], c);
+    await _reload(company['id']);
+  }
+
+  Future<void> _reload(String companyId) async {
+    final raw = await repo.fetchCustomers(companyId);
     state = AsyncData(raw.map((json) => Customer.fromJson(json)).toList());
   }
 
   Future<void> deleteCustomer(String id) async {
     await repo.deleteCustomer(id);
     final company = await ref.read(companyProvider.future);
-    final raw = await repo.fetchCustomers(company['id']);
-    state = AsyncData(raw.map((json) => Customer.fromJson(json)).toList());
+    await _reload(company['id']);
   }
 
   Future<void> updateCustomer(Customer c) async {
     await repo.updateCustomer(c);
     final company = await ref.read(companyProvider.future);
-    final raw = await repo.fetchCustomers(company['id']);
-    state = AsyncData(raw.map((json) => Customer.fromJson(json)).toList());
+    await _reload(company['id']);
   }
 }
 
 final customerProvider =
     AsyncNotifierProvider<CustomerNotifier, List<Customer>>(
-  CustomerNotifier.new,
-);
+      CustomerNotifier.new,
+    );

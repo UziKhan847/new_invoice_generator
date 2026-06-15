@@ -19,26 +19,8 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     final company = await ref.read(companyProvider.future);
     final invoiceNumber = await InvoiceNumberService()
         .generateNextInvoiceNumber(company['id']);
-    // Preserve ALL fields from the passed invoice — do not reconstruct
-    final numbered = Invoice(
-      invoiceNumber: invoiceNumber,
-      customerName: invoice.customerName,
-      customerId: invoice.customerId,
-      customerEmail: invoice.customerEmail,
-      items: invoice.items,
-      issueDate: invoice.issueDate,
-      dueDate: invoice.dueDate,
-      senderEmployeeId: invoice.senderEmployeeId,
-      senderName: invoice.senderName,
-      senderRole: invoice.senderRole,
-      senderEmail: invoice.senderEmail,
-      notes: invoice.notes,
-      taxRate: invoice.taxRate,
-      taxLabel: invoice.taxLabel,
-      isExport: invoice.isExport,
-      stripePaymentLink: invoice.stripePaymentLink,
-      paymentMethod: invoice.paymentMethod,
-    );
+    // copyWith preserves ALL fields (including address snapshots & company info)
+    final numbered = invoice.copyWith(invoiceNumber: invoiceNumber);
     await repo.createInvoice(numbered, company['id']);
     ref.invalidateSelf();
     await future;

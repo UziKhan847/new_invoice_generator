@@ -2,12 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/customer.dart';
+import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/quick_pdf_preview.dart';
 import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/email.dart';
 import 'package:new_invoice_generator/services/sms.dart';
-import 'package:new_invoice_generator/utils/with_loading_overlay.dart';
+import 'package:new_invoice_generator/utils/loading_overlay.dart';
 
 enum _Action { markPaid, email, sms, download, preview }
 
@@ -23,6 +26,15 @@ class InvoiceQuickMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final company = ref.read(companyProvider).asData?.value;
+    final customer = () {
+      final list = ref.read(customerProvider).asData?.value;
+      if (list == null || invoice.customerId == null) return null;
+      for (final c in list) {
+        if (c.id == invoice.customerId) return c;
+      }
+      return null;
+    }();
     final cs = Theme.of(context).colorScheme;
 
     return PopupMenuButton<_Action>(
@@ -41,10 +53,9 @@ class InvoiceQuickMenu extends ConsumerWidget {
             }
 
           case _Action.email:
-            if (context.mounted) _showEmailDialog(context);
+            if (context.mounted) _showEmailDialog(context, company, customer);
 
           case _Action.download:
-            if (!context.mounted) return;
             await withLoadingOverlay(
               context,
               message: 'Saving PDF…',
@@ -55,6 +66,8 @@ class InvoiceQuickMenu extends ConsumerWidget {
                   context: context,
                   invoice: invoice,
                   companyLogoUrl: logoUrl,
+                  company: company,
+                  customer: customer,
                 );
               },
             );
@@ -81,7 +94,11 @@ class InvoiceQuickMenu extends ConsumerWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => QuickPdfPreview(invoice: inv),
+                  builder: (_) => QuickPdfPreview(
+                    invoice: inv,
+                    company: company,
+                    customer: customer,
+                  ),
                 ),
               );
             }
@@ -123,7 +140,11 @@ class InvoiceQuickMenu extends ConsumerWidget {
     );
   }
 
-  void _showEmailDialog(BuildContext context) {
+  void _showEmailDialog(
+    BuildContext context,
+    Map<String, dynamic>? company,
+    Customer? customer,
+  ) {
     final emailCtrl = TextEditingController(text: invoice.customerEmail ?? '');
     showDialog(
       context: context,
@@ -169,7 +190,6 @@ class InvoiceQuickMenu extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               final email = emailCtrl.text.trim();
-              if (!context.mounted) return;
               await withLoadingOverlay(
                 context,
                 message: 'Preparing email…',
@@ -181,6 +201,8 @@ class InvoiceQuickMenu extends ConsumerWidget {
                     invoice: invoice,
                     recipientEmail: email,
                     companyLogoUrl: logoUrl,
+                    company: company,
+                    customer: customer,
                   );
                 },
               );

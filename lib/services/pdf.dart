@@ -1,14 +1,65 @@
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:new_invoice_generator/models/address.dart';
+import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfService {
-  /// Returns raw PDF bytes — used by email, preview, and print
-  static Future<Uint8List> buildPdfBytes(Invoice invoice) async {
+  /// Returns raw PDF bytes — used by email, preview, and print.
+  /// [company] is the live company record used as a fallback for invoices
+  /// created before business-info snapshots existed (or when snapshot is empty).
+  static Future<Uint8List> buildPdfBytes(
+    Invoice invoice, {
+    Map<String, dynamic>? company,
+    Customer? customer,
+  }) async {
     final pdf = pw.Document();
+
+    // Resolve effective business info: prefer the invoice snapshot, fall back
+    // to the live company record so the PDF is never missing the header.
+    String? pick(String? snap, String key) {
+      if (snap != null && snap.isNotEmpty) return snap;
+      final v = company?[key] as String?;
+      return (v != null && v.isNotEmpty) ? v : null;
+    }
+
+    final bizName = pick(invoice.companyName, 'name') ?? 'My Company';
+    final bizEmail = pick(invoice.companyEmail, 'email');
+    final bizPhone = pick(invoice.companyPhone, 'phone');
+    final bizBN = pick(invoice.businessNumber, 'business_number');
+    final bizRT = pick(invoice.rtNumber, 'rt_number');
+    final bizAddr = invoice.companyAddress.isNotEmpty
+        ? invoice.companyAddress
+        : (company != null
+              ? Address(
+                  line: company['address_line'] as String? ?? '',
+                  city: company['city'] as String? ?? '',
+                  province: company['province_region'] as String? ?? '',
+                  postalCode: company['postal_code'] as String? ?? '',
+                  country: company['country'] as String? ?? 'Canada',
+                )
+              : invoice.companyAddress);
+    final bizTaxLine = _businessTaxLineFrom(bizBN, bizRT);
+
+    // Resolve effective customer info: prefer the invoice's frozen snapshot,
+    // fall back to the live customer record so older invoices still show details.
+    final custName = invoice.customerName.isNotEmpty
+        ? invoice.customerName
+        : (customer?.name ?? '');
+    final custEmail =
+        (invoice.customerEmail != null && invoice.customerEmail!.isNotEmpty)
+        ? invoice.customerEmail
+        : (customer?.email.isNotEmpty == true ? customer!.email : null);
+    final custPhone =
+        (invoice.customerPhone != null && invoice.customerPhone!.isNotEmpty)
+        ? invoice.customerPhone
+        : (customer?.phone.isNotEmpty == true ? customer!.phone : null);
+    final custAddr = invoice.customerAddress.isNotEmpty
+        ? invoice.customerAddress
+        : (customer?.address ?? const Address());
 
     // Fetch logo bytes if URL is available
     pw.MemoryImage? logoImage;
@@ -30,75 +81,95 @@ class PdfService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // ── Header: logo + invoice title + sender ────────────────
+              // ── Header: business identity (left) + logo (right) ─────
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  // Left: logo + INVOICE title
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      if (logoImage != null) ...[
-                        pw.Image(
-                          logoImage,
-                          width: 72,
-                          height: 72,
-                          fit: pw.BoxFit.contain,
-                        ),
-                        pw.SizedBox(height: 8),
-                      ],
-                      pw.Text(
-                        'INVOICE',
-                        style: pw.TextStyle(
-                          fontSize: 28,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.blueGrey800,
-                        ),
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        '#${invoice.invoiceNumber}',
-                        style: const pw.TextStyle(
-                          fontSize: 14,
-                          color: PdfColors.grey600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Right: sender info
-                  if (invoice.senderName != null)
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  // Left: business name + BN/RT + address + contact
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(
-                          invoice.senderName!,
+                          bizName,
                           style: pw.TextStyle(
+                            fontSize: 20,
                             fontWeight: pw.FontWeight.bold,
-                            fontSize: 12,
+                            color: PdfColors.blueGrey800,
                           ),
                         ),
-                        if (invoice.senderRole != null)
+                        pw.SizedBox(height: 4),
+                        if (bizTaxLine.isNotEmpty)
                           pw.Text(
-                            invoice.senderRole!,
+                            bizTaxLine,
                             style: const pw.TextStyle(
-                              fontSize: 11,
-                              color: PdfColors.grey600,
+                              fontSize: 9,
+                              color: PdfColors.grey700,
                             ),
                           ),
-                        if (invoice.senderEmail != null)
-                          pw.Text(
-                            invoice.senderEmail!,
+                        ...bizAddr.lines.map(
+                          (l) => pw.Text(
+                            l,
                             style: const pw.TextStyle(
-                              fontSize: 11,
-                              color: PdfColors.grey600,
+                              fontSize: 9,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ),
+                        if (bizEmail != null)
+                          pw.Text(
+                            bizEmail,
+                            style: const pw.TextStyle(
+                              fontSize: 9,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        if (bizPhone != null)
+                          pw.Text(
+                            bizPhone,
+                            style: const pw.TextStyle(
+                              fontSize: 9,
+                              color: PdfColors.grey700,
                             ),
                           ),
                       ],
                     ),
+                  ),
+                  // Right: logo + doc type (INVOICE/RECEIPT)
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      if (logoImage != null) ...[
+                        pw.Image(
+                          logoImage,
+                          width: 80,
+                          height: 80,
+                          fit: pw.BoxFit.contain,
+                        ),
+                        pw.SizedBox(height: 4),
+                      ],
+                      pw.Text(
+                        invoice.isPaid ? 'RECEIPT' : 'INVOICE',
+                        style: pw.TextStyle(
+                          fontSize: 24,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blueGrey800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                '#${invoice.invoiceNumber}',
+                style: const pw.TextStyle(
+                  fontSize: 13,
+                  color: PdfColors.grey600,
+                ),
+              ),
+              pw.SizedBox(height: 16),
               pw.Divider(color: PdfColors.grey300),
               pw.SizedBox(height: 16),
 
@@ -120,17 +191,34 @@ class PdfService {
                       ),
                       pw.SizedBox(height: 4),
                       pw.Text(
-                        invoice.customerName,
+                        custName,
                         style: pw.TextStyle(
                           fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
                         ),
                       ),
-                      if (invoice.customerEmail != null)
-                        pw.Text(
-                          invoice.customerEmail!,
+                      ...custAddr.lines.map(
+                        (l) => pw.Text(
+                          l,
                           style: const pw.TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                      ),
+                      if (custPhone != null)
+                        pw.Text(
+                          custPhone,
+                          style: const pw.TextStyle(
+                            fontSize: 10,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                      if (custEmail != null)
+                        pw.Text(
+                          custEmail,
+                          style: const pw.TextStyle(
+                            fontSize: 10,
                             color: PdfColors.grey600,
                           ),
                         ),
@@ -332,8 +420,8 @@ class PdfService {
                         ),
                       _totalRow(
                         invoice.isExport
-                            ? 'Export — 0% Tax'
-                            : '\${invoice.taxLabel} (\${(invoice.effectiveTaxRate*100).toStringAsFixed(invoice.effectiveTaxRate*100 % 1==0?0:3)}%) on \$\${invoice.taxableSubtotal.toStringAsFixed(2)}',
+                            ? 'Export - 0% Tax'
+                            : '${invoice.taxLabel} (${_pctStr(invoice.effectiveTaxRate)})',
                         '\$${invoice.tax.toStringAsFixed(2)}',
                       ),
                       pw.Divider(color: PdfColors.grey400),
@@ -406,7 +494,7 @@ class PdfService {
                     else ...[
                       if (invoice.dueDate != null)
                         pw.Text(
-                          'Due by: \${invoice.dueDate!.toLocal().toString().split(\' \')[0]}',
+                          'Due by: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}',
                           style: const pw.TextStyle(
                             fontSize: 11,
                             color: PdfColors.orange700,
@@ -436,7 +524,7 @@ class PdfService {
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Please include invoice #\${invoice.invoiceNumber} in the e-transfer message.',
+                          'Please include invoice #${invoice.invoiceNumber} in the e-transfer message.',
                           style: const pw.TextStyle(
                             fontSize: 9,
                             color: PdfColors.grey600,
@@ -489,51 +577,58 @@ class PdfService {
                   ],
                 ),
               ),
+
+              // ── Notes (inline, if present) ─────────────────────────
+              if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
+                pw.SizedBox(height: 16),
+                pw.Text(
+                  'NOTES',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey500,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  invoice.notes!,
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+
+              // ── Thank-you footer ───────────────────────────────────
+              pw.Spacer(),
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      'Thank you for your business!',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blueGrey700,
+                      ),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      'We look forward to serving you again',
+                      style: const pw.TextStyle(
+                        fontSize: 10,
+                        color: PdfColors.grey600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           );
         },
       ),
     );
-
-    // ── Notes / payment terms page footer ────────────────────────
-    if (invoice.notes != null && invoice.notes!.isNotEmpty) {
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
-          build: (ctx) => pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                'Notes & Payment Terms',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.SizedBox(height: 8),
-              pw.Container(
-                width: double.infinity,
-                padding: const pw.EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300),
-                  borderRadius: const pw.BorderRadius.all(
-                    pw.Radius.circular(6),
-                  ),
-                ),
-                child: pw.Text(
-                  invoice.notes!,
-                  style: const pw.TextStyle(
-                    fontSize: 11,
-                    color: PdfColors.grey800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return pdf.save();
   }
@@ -542,6 +637,21 @@ class PdfService {
   static Future<void> generateInvoicePdf(Invoice invoice) async {
     final bytes = await buildPdfBytes(invoice);
     await Printing.layoutPdf(onLayout: (_) async => bytes);
+  }
+
+  /// Business/tax registration line: "BN: 123456789 RT 0001"
+  static String _businessTaxLineFrom(String? bn, String? rt) {
+    final parts = <String>[];
+    if (bn != null && bn.isNotEmpty) parts.add('BN: $bn');
+    if (rt != null && rt.isNotEmpty) parts.add('RT $rt');
+    return parts.join('  ');
+  }
+
+  /// Percentage string: 0.13 -> "13%", 0.14975 -> "14.975%"
+  static String _pctStr(double rate) {
+    final pct = rate * 100;
+    if (pct == pct.truncateToDouble()) return '${pct.toInt()}%';
+    return '${pct.toStringAsFixed(3).replaceAll(RegExp(r'0+\$'), '').replaceAll(RegExp(r'\.\$'), '')}%';
   }
 
   static pw.Widget _totalRow(

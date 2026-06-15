@@ -1,3 +1,4 @@
+import 'package:new_invoice_generator/models/address.dart';
 import 'invoice_item.dart';
 
 class Invoice {
@@ -7,6 +8,15 @@ class Invoice {
   final String? customerId;
   final String? customerEmail; // auto-filled for email dialog
   final String? customerPhone; // auto-filled for SMS
+  // Customer address snapshot (frozen at invoice creation)
+  final Address customerAddress;
+  // Company/business snapshot (frozen at invoice creation, shown in PDF header)
+  final String? companyName;
+  final String? companyEmail;
+  final String? companyPhone;
+  final String? businessNumber; // BN
+  final String? rtNumber; // RT
+  final Address companyAddress;
   final DateTime issueDate;
   final DateTime? dueDate;
   final bool isPaid;
@@ -38,6 +48,13 @@ class Invoice {
     this.customerId,
     this.customerEmail,
     this.customerPhone,
+    this.customerAddress = const Address(),
+    this.companyName,
+    this.companyEmail,
+    this.companyPhone,
+    this.businessNumber,
+    this.rtNumber,
+    this.companyAddress = const Address(),
     required this.items,
     DateTime? issueDate,
     this.dueDate,
@@ -81,6 +98,13 @@ class Invoice {
       customerEmail:
           cust?['email'] as String? ?? json['customer_email'] as String?,
       customerPhone: cust?['phone'] as String?,
+      customerAddress: Address.fromRow(json, prefix: 'customer_'),
+      companyName: json['company_name_snapshot'] as String?,
+      companyEmail: json['company_email_snapshot'] as String?,
+      companyPhone: json['company_phone_snapshot'] as String?,
+      businessNumber: json['business_number_snapshot'] as String?,
+      rtNumber: json['rt_number_snapshot'] as String?,
+      companyAddress: Address.fromRow(json, prefix: 'company_'),
       issueDate: DateTime.parse(json['issue_date'] ?? json['created_at']),
       dueDate: json['due_date'] != null
           ? DateTime.parse(json['due_date'])
@@ -123,6 +147,14 @@ class Invoice {
       'is_private': isPrivate,
       'stripe_payment_link': stripePaymentLink,
       'payment_method': paymentMethod,
+      ...customerAddress.toMap(prefix: 'customer_'),
+      // Company snapshot
+      'company_name_snapshot': companyName,
+      'company_email_snapshot': companyEmail,
+      'company_phone_snapshot': companyPhone,
+      'business_number_snapshot': businessNumber,
+      'rt_number_snapshot': rtNumber,
+      ...companyAddress.toMap(prefix: 'company_'),
     };
   }
 
@@ -156,8 +188,14 @@ class Invoice {
       customerName: customerName ?? this.customerName,
       customerId: customerId ?? this.customerId,
       customerEmail: customerEmail ?? this.customerEmail,
-      customerPhone:
-          customerPhone ?? this.customerPhone, // ignore: unnecessary_this
+      customerPhone: customerPhone ?? this.customerPhone,
+      customerAddress: customerAddress,
+      companyName: companyName ?? companyName,
+      companyEmail: companyEmail ?? companyEmail,
+      companyPhone: companyPhone ?? companyPhone,
+      businessNumber: businessNumber ?? businessNumber,
+      rtNumber: rtNumber ?? rtNumber,
+      companyAddress: companyAddress,
       items: items ?? this.items,
       issueDate: issueDate ?? this.issueDate,
       dueDate: dueDate ?? this.dueDate,

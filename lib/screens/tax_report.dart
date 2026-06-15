@@ -4,7 +4,7 @@ import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/services/tax_report.dart';
-import 'package:new_invoice_generator/utils/with_loading_overlay.dart';
+import 'package:new_invoice_generator/utils/loading_overlay.dart';
 
 class TaxReportScreen extends ConsumerStatefulWidget {
   const TaxReportScreen({super.key});

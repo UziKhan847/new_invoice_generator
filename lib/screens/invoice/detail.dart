@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
-import 'package:new_invoice_generator/screens/invoice/create/widgets/email_invoice_dialog.dart';
 import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:new_invoice_generator/services/sms.dart';
+import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:new_invoice_generator/services/download.dart';
@@ -29,9 +31,9 @@ class InvoiceDetailScreen extends ConsumerWidget {
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (invoices) {
         final Invoice? invoice = invoices.cast<Invoice?>().firstWhere(
-              (i) => i?.id == invoiceId,
-              orElse: () => null,
-            );
+          (i) => i?.id == invoiceId,
+          orElse: () => null,
+        );
 
         if (invoice == null) {
           return const Scaffold(body: Center(child: Text('Invoice not found')));
@@ -53,7 +55,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   }
                   logoUrl ??= company['logo_url'] as String?;
                   if (context.mounted) {
-                    showEmailInvoiceDialog(context: context, invoice: invoice, logoUrl: logoUrl);
+                    final customer = _resolveCustomer(ref, invoice.customerId);
+                    showEmailInvoiceDialog(
+                      context: context,
+                      invoice: invoice,
+                      logoUrl: logoUrl,
+                      company: company,
+                      customer: customer,
+                    );
                   }
                 },
               ),
@@ -87,7 +96,11 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => _PdfPreviewScreen(invoice: inv),
+                        builder: (_) => _PdfPreviewScreen(
+                          invoice: inv,
+                          company: company,
+                          customer: _resolveCustomer(ref, invoice.customerId),
+                        ),
                       ),
                     );
                   }
@@ -109,6 +122,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       context: context,
                       invoice: invoice,
                       companyLogoUrl: logoUrl,
+                      company: company,
+                      customer: _resolveCustomer(ref, invoice.customerId),
                     );
                   }
                 },
@@ -153,32 +168,39 @@ class InvoiceDetailScreen extends ConsumerWidget {
                                   Container(
                                     margin: const EdgeInsets.only(bottom: 4),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.purple.withAlpha(25),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                          color: Colors.purple.withAlpha(80)),
+                                        color: Colors.purple.withAlpha(80),
+                                      ),
                                     ),
                                     child: const Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.lock_outline,
-                                            size: 11, color: Colors.purple),
+                                        Icon(
+                                          Icons.lock_outline,
+                                          size: 11,
+                                          color: Colors.purple,
+                                        ),
                                         SizedBox(width: 4),
-                                        Text('Private — not in reports',
-                                            style: TextStyle(
-                                                fontSize: 10,
-                                                color: Colors.purple,
-                                                fontWeight: FontWeight.w600)),
+                                        Text(
+                                          'Private — not in reports',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.purple,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
                                 Text(
                                   invoice.customerName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
+                                  style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
@@ -191,9 +213,13 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text('Issued: ${invoice.issueDate.toLocal().toString().split(' ')[0]}'),
+                      Text(
+                        'Issued: ${invoice.issueDate.toLocal().toString().split(' ')[0]}',
+                      ),
                       if (invoice.dueDate != null)
-                        Text('Due: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}'),
+                        Text(
+                          'Due: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}',
+                        ),
                     ],
                   ),
                 ),
@@ -207,35 +233,39 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Sent by',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Sent by',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              child: Text(
-                                  invoice.senderName![0].toUpperCase()),
+                              child: Text(invoice.senderName![0].toUpperCase()),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(invoice.senderName!,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    invoice.senderName!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                   if (invoice.senderRole != null)
-                                    Text(invoice.senderRole!,
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withAlpha(150))),
+                                    Text(
+                                      invoice.senderRole!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface.withAlpha(150),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -255,11 +285,12 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Items',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Items',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const Divider(),
                       ...invoice.items.map(
                         (item) => Padding(
@@ -267,17 +298,25 @@ class InvoiceDetailScreen extends ConsumerWidget {
                           child: Row(
                             children: [
                               Expanded(child: Text(item.description)),
-                              Text('x${item.quantityDisplay}  \$${item.unitPrice.toStringAsFixed(2)}'),
+                              Text(
+                                'x${item.quantityDisplay}  \$${item.unitPrice.toStringAsFixed(2)}',
+                              ),
                               const SizedBox(width: 16),
-                              Text('\$${item.total.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text(
+                                '\$${item.total.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
                       const Divider(),
-                      _TotalRow(label: 'Pre-discount Subtotal',
-                          value: invoice.taxableSubtotal),
+                      _TotalRow(
+                        label: 'Pre-discount Subtotal',
+                        value: invoice.taxableSubtotal,
+                      ),
                       if (invoice.totalDiscountAmount > 0) ...[
                         _TotalRow(
                           label: 'Total Discounts',
@@ -285,15 +324,22 @@ class InvoiceDetailScreen extends ConsumerWidget {
                           prefix: '−',
                           color: Colors.green,
                         ),
-                        _TotalRow(label: 'After discounts',
-                            value: invoice.subtotal),
+                        _TotalRow(
+                          label: 'After discounts',
+                          value: invoice.subtotal,
+                        ),
                       ],
                       _TotalRow(
-                        label: 'Tax (13% on \$${invoice.taxableSubtotal.toStringAsFixed(2)})',
+                        label:
+                            'Tax (13% on \$${invoice.taxableSubtotal.toStringAsFixed(2)})',
                         value: invoice.tax,
                       ),
                       const SizedBox(height: 4),
-                      _TotalRow(label: 'Total', value: invoice.total, bold: true),
+                      _TotalRow(
+                        label: 'Total',
+                        value: invoice.total,
+                        bold: true,
+                      ),
                     ],
                   ),
                 ),
@@ -303,7 +349,10 @@ class InvoiceDetailScreen extends ConsumerWidget {
               if (invoice.isExport) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
@@ -313,11 +362,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.flight_outlined, size: 16, color: Colors.blue),
                       SizedBox(width: 8),
-                      Text('International Export — 0% Tax',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w600)),
+                      Text(
+                        'International Export — 0% Tax',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -338,36 +390,46 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       color: const Color(0xFF635BFF).withAlpha(15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: const Color(0xFF635BFF).withAlpha(80)),
+                        color: const Color(0xFF635BFF).withAlpha(80),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.credit_card_outlined,
-                            color: Color(0xFF635BFF), size: 20),
+                        const Icon(
+                          Icons.credit_card_outlined,
+                          color: Color(0xFF635BFF),
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Pay Online via Stripe',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF635BFF))),
+                              const Text(
+                                'Pay Online via Stripe',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF635BFF),
+                                ),
+                              ),
                               Text(
                                 invoice.stripePaymentLink!,
                                 style: TextStyle(
-                                    fontSize: 11,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withAlpha(130)),
+                                  fontSize: 11,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withAlpha(130),
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.open_in_new,
-                            size: 16, color: Color(0xFF635BFF)),
+                        const Icon(
+                          Icons.open_in_new,
+                          size: 16,
+                          color: Color(0xFF635BFF),
+                        ),
                       ],
                     ),
                   ),
@@ -385,19 +447,21 @@ class InvoiceDetailScreen extends ConsumerWidget {
                           children: [
                             Icon(Icons.notes_outlined, size: 16),
                             SizedBox(width: 8),
-                            Text('Notes & Payment Terms',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Notes & Payment Terms',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
                           invoice.notes!,
                           style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withAlpha(180)),
+                            fontSize: 13,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(180),
+                          ),
                         ),
                       ],
                     ),
@@ -425,8 +489,11 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 OutlinedButton.icon(
                   icon: const Icon(Icons.receipt_outlined),
                   label: const Text('Generate Receipt'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                  onPressed: () async => ReceiptPdfService.generateReceipt(invoice),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () async =>
+                      ReceiptPdfService.generateReceipt(invoice),
                 ),
               ],
               // ── Duplicate invoice ─────────────────────────────
@@ -435,7 +502,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.copy_outlined),
                 label: const Text('Duplicate Invoice'),
                 style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48)),
+                  minimumSize: const Size.fromHeight(48),
+                ),
                 onPressed: () async {
                   // Three-way choice: edit first, save now, or cancel.
                   final choice = await showDialog<_DuplicateChoice>(
@@ -443,27 +511,33 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     builder: (_) => AlertDialog(
                       title: const Text('Duplicate invoice'),
                       content: const Text(
-                          'Create a new unpaid invoice using the same items, '
-                          'customer, sender, and payment settings.\n\n'
-                          'Edit first to adjust details (e.g. quantities, '
-                          'discounts, due date) before saving, or save '
-                          'immediately with today\'s date.'),
+                        'Create a new unpaid invoice using the same items, '
+                        'customer, sender, and payment settings.\n\n'
+                        'Edit first to adjust details (e.g. quantities, '
+                        'discounts, due date) before saving, or save '
+                        'immediately with today\'s date.',
+                      ),
                       actionsOverflowDirection: VerticalDirection.up,
                       actions: [
                         TextButton(
-                            onPressed: () => Navigator.pop(
-                                context, _DuplicateChoice.cancel),
-                            child: const Text('Cancel')),
+                          onPressed: () =>
+                              Navigator.pop(context, _DuplicateChoice.cancel),
+                          child: const Text('Cancel'),
+                        ),
                         TextButton.icon(
-                            icon: const Icon(Icons.bolt_outlined, size: 18),
-                            onPressed: () => Navigator.pop(
-                                context, _DuplicateChoice.saveNow),
-                            label: const Text('Save now')),
+                          icon: const Icon(Icons.bolt_outlined, size: 18),
+                          onPressed: () =>
+                              Navigator.pop(context, _DuplicateChoice.saveNow),
+                          label: const Text('Save now'),
+                        ),
                         ElevatedButton.icon(
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            onPressed: () => Navigator.pop(
-                                context, _DuplicateChoice.editFirst),
-                            label: const Text('Edit first')),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          onPressed: () => Navigator.pop(
+                            context,
+                            _DuplicateChoice.editFirst,
+                          ),
+                          label: const Text('Edit first'),
+                        ),
                       ],
                     ),
                   );
@@ -481,8 +555,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         .buildDuplicate(invoice);
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) =>
-                            CreateInvoiceScreen(prefill: draft),
+                        builder: (_) => CreateInvoiceScreen(prefill: draft),
                       ),
                     );
                   } else {
@@ -493,9 +566,12 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context)
                         ..clearSnackBars()
-                        ..showSnackBar(const SnackBar(
+                        ..showSnackBar(
+                          const SnackBar(
                             content: Text('Invoice duplicated'),
-                            duration: Duration(seconds: 3)));
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
                     }
                   }
                 },
@@ -505,8 +581,9 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('Delete Invoice'),
                 style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    minimumSize: const Size.fromHeight(48)),
+                  foregroundColor: Colors.red,
+                  minimumSize: const Size.fromHeight(48),
+                ),
                 onPressed: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
@@ -515,18 +592,26 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       content: const Text('This cannot be undone.'),
                       actions: [
                         TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel')),
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
                         ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Delete',
-                                style: TextStyle(color: Colors.white))),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
                       ],
                     ),
                   );
                   if (confirm == true) {
-                    await ref.read(invoiceProvider.notifier).deleteInvoice(invoice.id!);
+                    await ref
+                        .read(invoiceProvider.notifier)
+                        .deleteInvoice(invoice.id!);
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
@@ -537,7 +622,6 @@ class InvoiceDetailScreen extends ConsumerWidget {
       },
     );
   }
-
 }
 
 class _StatusBadge extends StatelessWidget {
@@ -549,7 +633,9 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isPaid ? Colors.green.withAlpha(25) : Colors.orange.withAlpha(25),
+        color: isPaid
+            ? Colors.green.withAlpha(25)
+            : Colors.orange.withAlpha(25),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isPaid ? Colors.green : Colors.orange),
       ),
@@ -601,11 +687,12 @@ class _TotalRow extends StatelessWidget {
   }
 }
 
-
 // ── PDF Preview Screen ────────────────────────────────────────────────────────
 class _PdfPreviewScreen extends StatelessWidget {
   final Invoice invoice;
-  const _PdfPreviewScreen({required this.invoice});
+  final Map<String, dynamic>? company;
+  final Customer? customer;
+  const _PdfPreviewScreen({required this.invoice, this.company, this.customer});
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +704,11 @@ class _PdfPreviewScreen extends StatelessWidget {
             icon: const Icon(Icons.print_outlined),
             tooltip: 'Print / Download',
             onPressed: () async {
-              final bytes = await PdfService.buildPdfBytes(invoice);
+              final bytes = await PdfService.buildPdfBytes(
+                invoice,
+                company: company,
+                customer: customer,
+              );
               await Printing.layoutPdf(onLayout: (_) async => bytes);
             },
           ),
@@ -625,7 +716,11 @@ class _PdfPreviewScreen extends StatelessWidget {
             icon: const Icon(Icons.share_outlined),
             tooltip: 'Share PDF',
             onPressed: () async {
-              final bytes = await PdfService.buildPdfBytes(invoice);
+              final bytes = await PdfService.buildPdfBytes(
+                invoice,
+                company: company,
+                customer: customer,
+              );
               await Printing.sharePdf(
                 bytes: bytes,
                 filename: 'invoice_${invoice.invoiceNumber}.pdf',
@@ -636,9 +731,13 @@ class _PdfPreviewScreen extends StatelessWidget {
       ),
       body: PdfPreview(
         // Renders the PDF inline — zoomable, scrollable
-        build: (format) => PdfService.buildPdfBytes(invoice),
-        allowPrinting: false,   // handled by app bar button above
-        allowSharing: false,    // handled by app bar button above
+        build: (format) => PdfService.buildPdfBytes(
+          invoice,
+          company: company,
+          customer: customer,
+        ),
+        allowPrinting: false, // handled by app bar button above
+        allowSharing: false, // handled by app bar button above
         canChangeOrientation: false,
         canChangePageFormat: false,
         canDebug: false,
@@ -667,16 +766,21 @@ class _PaymentMethodBox extends StatelessWidget {
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(invoice.senderEmail!,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green)),
+              Text(
+                invoice.senderEmail!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
               const SizedBox(height: 2),
               Text(
-                'Include invoice #\${invoice.invoiceNumber} in the message.',
+                'Include invoice #${invoice.invoiceNumber} in the message.',
                 style: TextStyle(
-                    fontSize: 11, color: Colors.green.withAlpha(180)),
+                  fontSize: 11,
+                  color: Colors.green.withAlpha(180),
+                ),
               ),
             ],
           ),
@@ -687,16 +791,22 @@ class _PaymentMethodBox extends StatelessWidget {
           icon: Icons.credit_card_outlined,
           title: 'Pay Online via Stripe',
           body: invoice.stripePaymentLink?.isNotEmpty == true
-              ? Text(invoice.stripePaymentLink!,
+              ? Text(
+                  invoice.stripePaymentLink!,
                   style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF635BFF),
-                      decoration: TextDecoration.underline),
-                  overflow: TextOverflow.ellipsis)
-              : Text('Contact sender for payment link.',
+                    fontSize: 11,
+                    color: Color(0xFF635BFF),
+                    decoration: TextDecoration.underline,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                )
+              : Text(
+                  'Contact sender for payment link.',
                   style: TextStyle(
-                      fontSize: 11,
-                      color: const Color(0xFF635BFF).withAlpha(160))),
+                    fontSize: 11,
+                    color: const Color(0xFF635BFF).withAlpha(160),
+                  ),
+                ),
         );
       default: // 'other'
         return _box(
@@ -708,7 +818,9 @@ class _PaymentMethodBox extends StatelessWidget {
                 ? 'See notes below for payment details.'
                 : 'Contact sender for payment details.',
             style: TextStyle(
-                fontSize: 11, color: Colors.blueGrey.withAlpha(180)),
+              fontSize: 11,
+              color: Colors.blueGrey.withAlpha(180),
+            ),
           ),
         );
     }
@@ -736,11 +848,14 @@ class _PaymentMethodBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: color)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 body,
               ],
@@ -753,3 +868,16 @@ class _PaymentMethodBox extends StatelessWidget {
 }
 
 enum _DuplicateChoice { cancel, saveNow, editFirst }
+
+/// Resolve the live Customer for an invoice (by customerId) from the provider,
+/// used as a fallback so the PDF shows full customer details even when the
+/// invoice's own snapshot is empty. Returns null if not found.
+Customer? _resolveCustomer(WidgetRef ref, String? customerId) {
+  if (customerId == null) return null;
+  final list = ref.read(customerProvider).asData?.value;
+  if (list == null) return null;
+  for (final c in list) {
+    if (c.id == customerId) return c;
+  }
+  return null;
+}

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,12 +14,14 @@ class EmailService {
     required Invoice invoice,
     required String recipientEmail,
     String? companyLogoUrl,
+    Map<String, dynamic>? company,
+    Customer? customer,
   }) async {
     final inv = companyLogoUrl != null
         ? invoice.copyWith(companyLogoUrl: companyLogoUrl)
         : invoice;
 
-    final bytes = await PdfService.buildPdfBytes(inv);
+    final bytes = await PdfService.buildPdfBytes(inv, company: company, customer: customer);
     final fileName = 'invoice_${invoice.invoiceNumber}.pdf';
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileName');
@@ -115,9 +118,7 @@ class EmailService {
                 '💳 Pay Now — \$${invoice.total.toStringAsFixed(2)} CAD</a>'
                 '<p style="margin:8px 0 0;font-size:11px;color:#aaa">Secure payment via Stripe. Amount in CAD.</p></div>'
               : '<p style="font-size:12px;color:#555;margin-top:6px">Contact sender for payment link.</p>';
-          return '<div style="margin-top:16px;padding:12px;background:#f5f3ff;border-radius:8px;border:1px solid #c4b5fd">'
-              '<p style="margin:0;font-size:13px;font-weight:bold;color:#635bff">💳 Pay Online via Stripe</p>'
-              '$linkPart</div>';
+          return '<div style="margin-top:16px;padding:12px;background:#f5f3ff;border-radius:8px;border:1px solid #c4b5fd"><p style="margin:0;font-size:13px;font-weight:bold;color:#635bff">💳 Pay Online via Stripe</p>$linkPart</div>';
         default:
           return ''; // 'other' — no payment instructions
       }

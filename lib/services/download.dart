@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,12 +14,18 @@ class DownloadService {
     required BuildContext context,
     required Invoice invoice,
     String? companyLogoUrl,
+    Map<String, dynamic>? company,
+    Customer? customer,
   }) async {
     final inv = companyLogoUrl != null
         ? invoice.copyWith(companyLogoUrl: companyLogoUrl)
         : invoice;
 
-    final bytes = await PdfService.buildPdfBytes(inv);
+    final bytes = await PdfService.buildPdfBytes(
+      inv,
+      company: company,
+      customer: customer,
+    );
 
     final date = invoice.issueDate;
     final year = '${date.year}';
@@ -76,25 +83,27 @@ class DownloadService {
       final filePath = '${dir.path}/$fileName.pdf';
       await File(filePath).writeAsBytes(bytes);
 
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Saved: Invoices/$year/$month/$fileName.pdf'),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Saved: Invoices/$year/$month/$fileName.pdf'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      }
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Save failed: $e'),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      }
     }
   }
 
@@ -121,15 +130,16 @@ class DownloadService {
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Save failed: $e'),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      }
     }
   }
 
@@ -151,25 +161,27 @@ class DownloadService {
       final filePath = '${dir.path}/$fileName.pdf';
       await File(filePath).writeAsBytes(bytes);
 
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Saved to Documents/Invoices/$fileName.pdf'),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Saved to Documents/Invoices/$fileName.pdf'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      }
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Save failed: $e'),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Save failed: $e'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      }
     }
   }
 

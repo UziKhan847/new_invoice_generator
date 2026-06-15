@@ -59,9 +59,9 @@ class CompanyNotifier extends AsyncNotifier<Map<String, dynamic>> {
     required String province,
     required double taxRate,
     required String taxLabel,
-    String? address,
     String? email,
     String? phone,
+    String? addressLine,
   }) async {
     final company = await future;
     await supabase
@@ -71,12 +71,20 @@ class CompanyNotifier extends AsyncNotifier<Map<String, dynamic>> {
           'province': province,
           'tax_rate': taxRate,
           'tax_label': taxLabel,
-          'address': address,
           'email': email,
           'phone': phone,
+          'address_line': addressLine,
           'onboarded': true,
         })
         .eq('id', company['id']);
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// Save full business profile (identity + structured address).
+  Future<void> updateProfile(Map<String, dynamic> fields) async {
+    final company = await future;
+    await supabase.from('companies').update(fields).eq('id', company['id']);
     ref.invalidateSelf();
     await future;
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/employee.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
+import 'package:new_invoice_generator/screens/widgets/phone_field.dart';
 
 class EmployeesScreen extends ConsumerWidget {
   const EmployeesScreen({super.key});
@@ -137,7 +138,7 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
   late final TextEditingController _name;
   late final TextEditingController _role;
   late final TextEditingController _email;
-  late final TextEditingController _phone;
+  String _phone = '';
   bool _loading = false;
 
   @override
@@ -146,7 +147,7 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
     _name = TextEditingController(text: widget.employee?.name ?? '');
     _role = TextEditingController(text: widget.employee?.role ?? '');
     _email = TextEditingController(text: widget.employee?.email ?? '');
-    _phone = TextEditingController(text: widget.employee?.phone ?? '');
+    _phone = widget.employee?.phone ?? '';
   }
 
   @override
@@ -154,7 +155,6 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
     _name.dispose();
     _role.dispose();
     _email.dispose();
-    _phone.dispose();
     super.dispose();
   }
 
@@ -183,10 +183,10 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
               decoration: const InputDecoration(labelText: 'Email'),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone (optional)'),
+            PhoneField(
+              initial: _phone,
+              label: 'Phone (optional)',
+              onChanged: (v) => _phone = v,
             ),
           ],
         ),
@@ -210,9 +210,7 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
                       name: _name.text.trim(),
                       role: _role.text.trim(),
                       email: _email.text.trim(),
-                      phone: _phone.text.trim().isEmpty
-                          ? null
-                          : _phone.text.trim(),
+                      phone: _phone.isEmpty ? null : _phone,
                     );
                     if (isEdit) {
                       await ref.read(employeeProvider.notifier).save(e);
@@ -221,10 +219,11 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
                     }
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
                   } finally {
                     if (mounted) setState(() => _loading = false);
                   }

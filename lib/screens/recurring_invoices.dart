@@ -349,7 +349,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                   ...employees.map(
                     (e) => DropdownMenuItem(
                       value: e.id,
-                      child: Text('\${e.name} · \${e.role}'),
+                      child: Text('${e.name} · ${e.role}'),
                     ),
                   ),
                 ],

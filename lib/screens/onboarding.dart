@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/province.dart';
 import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/screens/widgets/phone_field.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,7 +15,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _nameCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  String _phone = '';
   Province _province = Province.fromCode('ON');
   bool _loading = false;
   String? _error;
@@ -25,7 +26,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _nameCtrl.dispose();
     _addressCtrl.dispose();
     _emailCtrl.dispose();
-    _phoneCtrl.dispose();
     super.dispose();
   }
 
@@ -46,15 +46,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             province: _province.code,
             taxRate: _province.taxRate,
             taxLabel: _province.taxLabel,
-            address: _addressCtrl.text.trim().isEmpty
+            addressLine: _addressCtrl.text.trim().isEmpty
                 ? null
                 : _addressCtrl.text.trim(),
             email: _emailCtrl.text.trim().isEmpty
                 ? null
                 : _emailCtrl.text.trim(),
-            phone: _phoneCtrl.text.trim().isEmpty
-                ? null
-                : _phoneCtrl.text.trim(),
+            phone: _phone.isEmpty ? null : _phone,
           );
       // AuthGate will rebuild and show AppShell once company.onboarded = true
     } catch (e) {
@@ -84,7 +82,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     nameCtrl: _nameCtrl,
                     addressCtrl: _addressCtrl,
                     emailCtrl: _emailCtrl,
-                    phoneCtrl: _phoneCtrl,
+                    phone: _phone,
+                    onPhoneChanged: (v) => _phone = v,
                     error: _error,
                     onBack: () => setState(() => _step = 0),
                     onNext: () {
@@ -166,7 +165,8 @@ class _CompanyStep extends StatelessWidget {
   final TextEditingController nameCtrl;
   final TextEditingController addressCtrl;
   final TextEditingController emailCtrl;
-  final TextEditingController phoneCtrl;
+  final String phone;
+  final ValueChanged<String> onPhoneChanged;
   final String? error;
   final VoidCallback onBack;
   final VoidCallback onNext;
@@ -176,7 +176,8 @@ class _CompanyStep extends StatelessWidget {
     required this.nameCtrl,
     required this.addressCtrl,
     required this.emailCtrl,
-    required this.phoneCtrl,
+    required this.phone,
+    required this.onPhoneChanged,
     required this.error,
     required this.onBack,
     required this.onNext,
@@ -215,7 +216,8 @@ class _CompanyStep extends StatelessWidget {
           controller: addressCtrl,
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
-            labelText: 'Address (optional)',
+            labelText: 'Street address (optional)',
+            hintText: 'Add full address later in Company Profile',
             prefixIcon: Icon(Icons.location_on_outlined),
           ),
         ),
@@ -229,13 +231,10 @@ class _CompanyStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: phoneCtrl,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone (optional)',
-            prefixIcon: Icon(Icons.phone_outlined),
-          ),
+        PhoneField(
+          initial: phone,
+          label: 'Phone (optional)',
+          onChanged: onPhoneChanged,
         ),
         if (error != null) ...[
           const SizedBox(height: 8),
