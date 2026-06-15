@@ -38,6 +38,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final List<InvoiceItem> _items = [];
 
   // Invoice meta
+  DateTime _issueDate = DateTime.now();
   DateTime? _dueDate;
   bool _isExport = false;
   bool _isPrivate = false;
@@ -121,7 +122,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             customerEmail: _customerEmail,
             customerPhone: _customerPhone,
             items: _items,
-            issueDate: DateTime.now(),
+            issueDate: _issueDate,
             dueDate: _dueDate,
             senderEmployeeId: _employee?.id,
             senderName: _employee?.name,
@@ -178,6 +179,35 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           const SizedBox(height: 12),
 
+          // ── Issue date (can be back-dated) ───────────────────────
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.event_outlined),
+              title: const Text('Issue date'),
+              subtitle: Text(_issueDate.toLocal().toString().split(' ')[0]),
+              trailing: const Icon(Icons.edit_calendar_outlined, size: 18),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _issueDate,
+                  // Allow back-dating up to 5 years, and future-dating 1 year
+                  firstDate: DateTime(DateTime.now().year - 5),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null && mounted) {
+                  setState(() {
+                    _issueDate = picked;
+                    // If due date is now before issue date, clear it
+                    if (_dueDate != null && _dueDate!.isBefore(picked)) {
+                      _dueDate = null;
+                    }
+                  });
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // ── Due date ─────────────────────────────────────────────
           Card(
             child: ListTile(
@@ -196,9 +226,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now().add(const Duration(days: 30)),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  initialDate:
+                      _dueDate ?? _issueDate.add(const Duration(days: 30)),
+                  // Due date can't be before the issue date
+                  firstDate: _issueDate,
+                  lastDate: _issueDate.add(const Duration(days: 730)),
                 );
                 if (picked != null && mounted) {
                   setState(() => _dueDate = picked);

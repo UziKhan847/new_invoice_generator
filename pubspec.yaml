@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: 'none' 
 
-version: 1.1.0+8
+version: 1.2.0+9
 
 environment:
   sdk: ^3.10.0
@@ -25,11 +25,11 @@ dependencies:
   open_filex: ^4.7.0
   custom_image_crop: ^0.1.1
   http: ^1.2.0
-  flutter_email_sender: ^8.0.0
+  flutter_email_sender: ^10.0.0
   permission_handler: ^12.0.1
   image_cropper: ^12.1.1
   flutter_launcher_icons: ^0.14.4
-  flutter_local_notifications: ^21.0.0
+  flutter_local_notifications: ^22.0.1
   workmanager: ^0.9.0+3
   timezone: ^0.11.0
 

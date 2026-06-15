@@ -21,7 +21,7 @@ void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     if (taskName == _kRecurringTask) {
       // Re-init Supabase in the background isolate
-      await Supabase.initialize(url: url, anonKey: anonKey);
+      await Supabase.initialize(url: url, publishableKey: anonKey);
       await NotificationService.init();
 
       // Recurring check runs via RecurringInvoiceRunner on app resume
@@ -35,7 +35,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: url, // e.g. https://abcdefgh.supabase.co
-    anonKey: anonKey,
+    publishableKey: anonKey,
   );
 
   // Init notifications

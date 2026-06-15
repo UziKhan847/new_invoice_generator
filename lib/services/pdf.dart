@@ -333,7 +333,7 @@ class PdfService {
                       _totalRow(
                         invoice.isExport
                             ? 'Export — 0% Tax'
-                            : '${invoice.taxLabel} (${(invoice.effectiveTaxRate * 100).toStringAsFixed(invoice.effectiveTaxRate * 100 % 1 == 0 ? 0 : 3)}%) on \$${invoice.taxableSubtotal.toStringAsFixed(2)}',
+                            : '\${invoice.taxLabel} (\${(invoice.effectiveTaxRate*100).toStringAsFixed(invoice.effectiveTaxRate*100 % 1==0?0:3)}%) on \$\${invoice.taxableSubtotal.toStringAsFixed(2)}',
                         '\$${invoice.tax.toStringAsFixed(2)}',
                       ),
                       pw.Divider(color: PdfColors.grey400),
@@ -372,18 +372,41 @@ class PdfService {
                     ),
                     pw.SizedBox(height: 6),
                     if (invoice.isPaid)
-                      pw.Text(
-                        '✓ PAID',
-                        style: pw.TextStyle(
-                          fontSize: 13,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.green700,
-                        ),
+                      pw.Row(
+                        mainAxisSize: pw.MainAxisSize.min,
+                        children: [
+                          pw.Container(
+                            width: 14,
+                            height: 14,
+                            decoration: const pw.BoxDecoration(
+                              color: PdfColors.green700,
+                              shape: pw.BoxShape.circle,
+                            ),
+                            alignment: pw.Alignment.center,
+                            child: pw.Text(
+                              'P',
+                              style: pw.TextStyle(
+                                fontSize: 9,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ),
+                          pw.SizedBox(width: 6),
+                          pw.Text(
+                            'PAID',
+                            style: pw.TextStyle(
+                              fontSize: 13,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green700,
+                            ),
+                          ),
+                        ],
                       )
                     else ...[
                       if (invoice.dueDate != null)
                         pw.Text(
-                          "Due by: ${invoice.dueDate!.toLocal().toString().split('')[0]}",
+                          'Due by: \${invoice.dueDate!.toLocal().toString().split(\' \')[0]}',
                           style: const pw.TextStyle(
                             fontSize: 11,
                             color: PdfColors.orange700,
@@ -413,7 +436,7 @@ class PdfService {
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Please include invoice #${invoice.invoiceNumber} in the e-transfer message.',
+                          'Please include invoice #\${invoice.invoiceNumber} in the e-transfer message.',
                           style: const pw.TextStyle(
                             fontSize: 9,
                             color: PdfColors.grey600,
