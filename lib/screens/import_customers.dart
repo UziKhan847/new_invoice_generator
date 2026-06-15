@@ -26,18 +26,18 @@ class _ImportCustomersScreenState extends ConsumerState<ImportCustomersScreen> {
       _error = null;
     });
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
-        withData: true,
       );
       if (result == null || result.files.isEmpty) {
         setState(() => _loading = false);
         return;
       }
       final file = result.files.first;
-      final Uint8List? bytes = file.bytes;
-      if (bytes == null) {
+      // v12: read bytes on demand instead of the deprecated `bytes`/`withData`
+      final Uint8List bytes = await file.readAsBytes();
+      if (bytes.isEmpty) {
         setState(() {
           _error = 'Could not read the file.';
           _loading = false;
