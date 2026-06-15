@@ -20,7 +20,12 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
   /// Optional invoice to prefill — used for editing duplicates.
   /// Fields are copied into form state on init; user can change them before saving.
   final Invoice? prefill;
-  const CreateInvoiceScreen({super.key, this.prefill});
+
+  /// When set, the screen edits this existing invoice in place (keeps id +
+  /// invoice number) instead of creating a new one.
+  final Invoice? editingInvoice;
+
+  const CreateInvoiceScreen({super.key, this.prefill, this.editingInvoice});
 
   @override
   ConsumerState<CreateInvoiceScreen> createState() =>
@@ -45,6 +50,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   DateTime _issueDate = DateTime.now();
   DateTime? _dueDate;
   TaxMode _taxMode = TaxMode.standard;
+  double? _editTaxRate; // captured from an edited/prefilled invoice
+  String? _editTaxLabel;
+  bool _resolvedEditTax = false;
   final _customTaxRateCtrl = TextEditingController(); // percentage as text
   final _customTaxLabelCtrl = TextEditingController();
   bool _isPrivate = false;
@@ -57,7 +65,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   @override
   void initState() {
     super.initState();
-    final p = widget.prefill;
+    // Editing takes priority over prefill; both populate the form the same way.
+    final p = widget.editingInvoice ?? widget.prefill;
     if (p != null) {
       _customerId = p.customerId;
       _customerName = p.customerName;
@@ -75,13 +84,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       }
       _items.addAll(p.items);
       _dueDate = p.dueDate;
+      // When editing, keep the original issue date; duplicates default to today.
+      if (widget.editingInvoice != null) {
+        _issueDate = p.issueDate;
+        _customerAddress = p.customerAddress;
+      }
       // Derive tax mode from the prefilled invoice
       if (p.isExport) {
         _taxMode = TaxMode.export;
       } else if (p.taxRate == 0) {
         _taxMode = TaxMode.zeroRated;
       } else {
+        // Standard or custom — resolved in build() once company is available.
         _taxMode = TaxMode.standard;
+        _editTaxRate = p.taxRate;
+        _editTaxLabel = p.taxLabel;
       }
       _isPrivate = p.isPrivate;
       _paymentMethod = PaymentMethod.fromValue(p.paymentMethod);
@@ -150,6 +167,78 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       );
       return;
     }
+
+    final editing = widget.editingInvoice;
+
+    // Warn before editing a PAID invoice — totals/fees won't auto-recalculate.
+    if (editing != null && editing.isPaid) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Edit a paid invoice?'),
+          content: const Text(
+            'This invoice is marked paid. Editing it will change the '
+            'recorded amounts. Any payment processing fee already logged as '
+            'an expense will NOT be recalculated automatically.\n\n'
+            'Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Edit anyway'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+      if (!mounted) return;
+    }
+
+    final companyAddress = Address(
+      line: company['address_line'] as String? ?? '',
+      city: company['city'] as String? ?? '',
+      province: company['province_region'] as String? ?? '',
+      postalCode: company['postal_code'] as String? ?? '',
+      country: company['country'] as String? ?? 'Canada',
+    );
+
+    if (editing != null) {
+      // ── UPDATE in place: keep id + invoice number ──────────────────────────
+      final updated = editing.copyWith(
+        customerName: _customerName!,
+        customerId: _customerId,
+        customerEmail: _customerEmail,
+        customerPhone: _customerPhone,
+        items: _items,
+        issueDate: _issueDate,
+        dueDate: _dueDate,
+        senderEmployeeId: _employee?.id,
+        senderName: _employee?.name,
+        senderRole: _employee?.role,
+        senderEmail: _employee?.email,
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        taxRate: _taxRate(company),
+        taxLabel: _taxLabel(company),
+        isExport: _isExport,
+        isPrivate: _isPrivate,
+        paymentMethod: _paymentMethod.value,
+        stripePaymentLink:
+            _paymentMethod == PaymentMethod.stripe &&
+                _stripeLinkCtrl.text.trim().isNotEmpty
+            ? _stripeLinkCtrl.text.trim()
+            : null,
+        customerAddress: _customerAddress,
+      );
+      await ref.read(invoiceProvider.notifier).updateInvoice(updated);
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    // ── CREATE new ───────────────────────────────────────────────────────────
     await ref
         .read(invoiceProvider.notifier)
         .addInvoice(
@@ -187,13 +276,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             companyPhone: company['phone'] as String?,
             businessNumber: company['business_number'] as String?,
             rtNumber: company['rt_number'] as String?,
-            companyAddress: Address(
-              line: company['address_line'] as String? ?? '',
-              city: company['city'] as String? ?? '',
-              province: company['province_region'] as String? ?? '',
-              postalCode: company['postal_code'] as String? ?? '',
-              country: company['country'] as String? ?? 'Canada',
-            ),
+            companyAddress: companyAddress,
           ),
         );
     if (mounted) Navigator.pop(context);
@@ -204,10 +287,32 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final company = ref.watch(companyProvider).asData?.value ?? {};
     final services = ref.watch(serviceProvider).asData?.value ?? [];
 
+    // Resolve whether an edited/prefilled invoice used a CUSTOM tax (label or
+    // rate differs from the company's). Done here because we need company data.
+    if (!_resolvedEditTax && company.isNotEmpty && _editTaxRate != null) {
+      _resolvedEditTax = true;
+      final compRate = (company['tax_rate'] as num?)?.toDouble() ?? 0.13;
+      final compLabel = company['tax_label'] as String? ?? 'HST';
+      final r = _editTaxRate!;
+      final l = _editTaxLabel ?? compLabel;
+      if (r != 0 && (r != compRate || l != compLabel)) {
+        _taxMode = TaxMode.custom;
+        _customTaxRateCtrl.text = (r * 100)
+            .toStringAsFixed(r * 100 % 1 == 0 ? 0 : 3)
+            .replaceAll(RegExp(r'\.?0+\$'), '');
+        _customTaxLabelCtrl.text = l;
+      }
+    }
+
+    final isEditing = widget.editingInvoice != null;
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.prefill != null ? 'Duplicate Invoice' : 'Create Invoice',
+          isEditing
+              ? 'Edit Invoice'
+              : widget.prefill != null
+              ? 'Duplicate Invoice'
+              : 'Create Invoice',
         ),
       ),
       body: ListView(

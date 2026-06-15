@@ -27,6 +27,24 @@ class InvoiceRepository {
     }
   }
 
+  /// Update an existing invoice in place (same id, same invoice number).
+  /// Replaces the invoice row's fields and rewrites its line items.
+  Future<void> updateInvoice(Invoice invoice) async {
+    if (invoice.id == null) {
+      throw ArgumentError('Cannot update an invoice without an id');
+    }
+    final id = invoice.id!;
+
+    // 1. Update the invoice row (toUpdateMap omits company_id/created_at)
+    await supabase.from('invoices').update(invoice.toUpdateMap()).eq('id', id);
+
+    // 2. Replace line items: delete existing, insert current
+    await supabase.from('invoice_items').delete().eq('invoice_id', id);
+    for (final item in invoice.items) {
+      await supabase.from('invoice_items').insert(item.toInsertMap(id));
+    }
+  }
+
   Future<void> markPaid(String invoiceId) async {
     await supabase
         .from('invoices')

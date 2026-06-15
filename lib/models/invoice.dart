@@ -174,6 +174,38 @@ class Invoice {
     };
   }
 
+  /// Fields to update on an existing invoice. Keeps the same invoice_number
+  /// (the permanent identifier) but allows everything else to change.
+  /// Omits company_id and created_at (immutable after creation).
+  Map<String, dynamic> toUpdateMap() {
+    return {
+      'customer_name': customerName,
+      'customer_id': customerId,
+      'issue_date': issueDate.toIso8601String().split('T')[0],
+      'due_date': dueDate?.toIso8601String().split('T')[0],
+      'subtotal': subtotal,
+      'tax': tax,
+      'total': total,
+      'is_paid': isPaid,
+      'status': status,
+      'sender_employee_id': senderEmployeeId,
+      'notes': notes,
+      'tax_rate': taxRate,
+      'tax_label': taxLabel,
+      'is_export': isExport,
+      'is_private': isPrivate,
+      'stripe_payment_link': stripePaymentLink,
+      'payment_method': paymentMethod,
+      ...customerAddress.toMap(prefix: 'customer_'),
+      'company_name_snapshot': companyName,
+      'company_email_snapshot': companyEmail,
+      'company_phone_snapshot': companyPhone,
+      'business_number_snapshot': businessNumber,
+      'rt_number_snapshot': rtNumber,
+      ...companyAddress.toMap(prefix: 'company_'),
+    };
+  }
+
   Invoice copyWith({
     String? companyLogoUrl,
     String? invoiceNumber,
@@ -181,6 +213,13 @@ class Invoice {
     String? customerId,
     String? customerEmail,
     String? customerPhone,
+    Address? customerAddress,
+    String? companyName,
+    String? companyEmail,
+    String? companyPhone,
+    String? businessNumber,
+    String? rtNumber,
+    Address? companyAddress,
     List<InvoiceItem>? items,
     DateTime? issueDate,
     DateTime? dueDate,
@@ -205,13 +244,13 @@ class Invoice {
       customerId: customerId ?? this.customerId,
       customerEmail: customerEmail ?? this.customerEmail,
       customerPhone: customerPhone ?? this.customerPhone,
-      customerAddress: customerAddress,
-      companyName: companyName ?? companyName,
-      companyEmail: companyEmail ?? companyEmail,
-      companyPhone: companyPhone ?? companyPhone,
-      businessNumber: businessNumber ?? businessNumber,
-      rtNumber: rtNumber ?? rtNumber,
-      companyAddress: companyAddress,
+      customerAddress: customerAddress ?? this.customerAddress,
+      companyName: companyName ?? this.companyName,
+      companyEmail: companyEmail ?? this.companyEmail,
+      companyPhone: companyPhone ?? this.companyPhone,
+      businessNumber: businessNumber ?? this.businessNumber,
+      rtNumber: rtNumber ?? this.rtNumber,
+      companyAddress: companyAddress ?? this.companyAddress,
       items: items ?? this.items,
       issueDate: issueDate ?? this.issueDate,
       dueDate: dueDate ?? this.dueDate,

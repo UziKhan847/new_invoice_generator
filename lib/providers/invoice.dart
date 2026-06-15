@@ -26,6 +26,13 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     await future;
   }
 
+  /// Update an existing invoice in place. Preserves id + invoice number.
+  Future<void> updateInvoice(Invoice invoice) async {
+    await repo.updateInvoice(invoice);
+    ref.invalidateSelf();
+    await future;
+  }
+
   Future<void> markPaid(String id) async {
     await repo.markPaid(id);
     ref.invalidateSelf();

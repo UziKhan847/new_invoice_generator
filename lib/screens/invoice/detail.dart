@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
+import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:new_invoice_generator/services/sms.dart';
-import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
@@ -496,6 +496,24 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       ReceiptPdfService.generateReceipt(invoice),
                 ),
               ],
+              // ── Edit invoice ──────────────────────────────────
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit Invoice'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CreateInvoiceScreen(editingInvoice: invoice),
+                    ),
+                  );
+                },
+              ),
+
               // ── Duplicate invoice ─────────────────────────────
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -723,7 +741,7 @@ class _PdfPreviewScreen extends StatelessWidget {
               );
               await Printing.sharePdf(
                 bytes: bytes,
-                filename: 'invoice_${invoice.invoiceNumber}.pdf',
+                filename: '${invoice.fileBaseName}.pdf',
               );
             },
           ),
@@ -776,7 +794,7 @@ class _PaymentMethodBox extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Include invoice #${invoice.invoiceNumber} in the message.',
+                'Include invoice #\${invoice.invoiceNumber} in the message.',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.green.withAlpha(180),
