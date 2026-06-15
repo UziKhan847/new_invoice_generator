@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/invoice_form_helpers.dart';
 
 class CustomerSection extends ConsumerWidget {
   final String? selectedId;
-  final void Function(String? id, String? name, String? email, String? phone) onChanged;
+  final void Function(Customer? customer) onChanged;
 
   const CustomerSection({
     super.key,
@@ -22,11 +23,13 @@ class CustomerSection extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Text('Error: $e'),
       data: (customers) {
-        final selected = selectedId == null
-            ? null
-            : customers.cast<dynamic>().firstWhere(
-                (c) => c.id == selectedId,
-                orElse: () => null);
+        Customer? selected;
+        for (final c in customers) {
+          if (c.id == selectedId) {
+            selected = c;
+            break;
+          }
+        }
 
         return SectionCard(
           title: 'Customer',
@@ -35,49 +38,36 @@ class CustomerSection extends ConsumerWidget {
             children: [
               DropdownButtonFormField<String>(
                 initialValue: selectedId,
-                decoration:
-                    const InputDecoration(labelText: 'Select customer'),
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Select customer'),
                 items: customers
-                    .map((c) =>
-                        DropdownMenuItem(value: c.id, child: Text(c.name)))
+                    .map(
+                      (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
+                    )
                     .toList(),
                 onChanged: (v) {
-                  final c = customers.cast<dynamic>().firstWhere(
-                      (c) => c.id == v,
-                      orElse: () => null);
-                  onChanged(
-                    v,
-                    c?.name as String?,
-                    c?.email as String?,
-                    c?.phone as String?,
-                  );
+                  Customer? picked;
+                  for (final c in customers) {
+                    if (c.id == v) {
+                      picked = c;
+                      break;
+                    }
+                  }
+                  onChanged(picked);
                 },
               ),
-              if (selected?.email != null &&
-                  (selected!.email as String).isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Row(children: [
-                  Icon(Icons.email_outlined,
-                      size: 13, color: cs.onSurface.withAlpha(130)),
-                  const SizedBox(width: 6),
-                  Text(selected.email as String,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurface.withAlpha(140))),
-                ]),
-              ],
-              if (selected?.phone != null &&
-                  (selected!.phone as String).isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Row(children: [
-                  Icon(Icons.phone_outlined,
-                      size: 13, color: cs.onSurface.withAlpha(130)),
-                  const SizedBox(width: 6),
-                  Text(selected.phone as String,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurface.withAlpha(140))),
-                ]),
+              if (selected != null) ...[
+                const SizedBox(height: 8),
+                if (selected.email.isNotEmpty)
+                  _row(cs, Icons.email_outlined, selected.email),
+                if (selected.phone.isNotEmpty)
+                  _row(cs, Icons.phone_outlined, selected.phone),
+                if (selected.address.isNotEmpty)
+                  _row(
+                    cs,
+                    Icons.location_on_outlined,
+                    selected.address.singleLine,
+                  ),
               ],
             ],
           ),
@@ -85,4 +75,21 @@ class CustomerSection extends ConsumerWidget {
       },
     );
   }
+
+  Widget _row(ColorScheme cs, IconData icon, String text) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 13, color: cs.onSurface.withAlpha(130)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 12, color: cs.onSurface.withAlpha(150)),
+          ),
+        ),
+      ],
+    ),
+  );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/screens/import_customers.dart';
 import 'package:new_invoice_generator/widgets/add_customer_dialog.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,21 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 ),
               ],
             )
-          : AppBar(title: const Text('Customers')),
+          : AppBar(
+              title: const Text('Customers'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.upload_file_outlined),
+                  tooltip: 'Import from spreadsheet',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ImportCustomersScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
       body: customersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),

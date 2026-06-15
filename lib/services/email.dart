@@ -22,7 +22,7 @@ class EmailService {
         : invoice;
 
     final bytes = await PdfService.buildPdfBytes(inv, company: company, customer: customer);
-    final fileName = 'invoice_${invoice.invoiceNumber}.pdf';
+    final fileName = '${invoice.fileBaseName}.pdf';
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileName');
     await file.writeAsBytes(bytes);

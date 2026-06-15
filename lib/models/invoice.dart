@@ -86,6 +86,22 @@ class Invoice {
   double get tax => taxableSubtotal * effectiveTaxRate;
   double get total => subtotal + tax;
 
+  /// Canonical file name (no extension) used for downloads / sharing / email.
+  /// Format: "[invoice_num]. [customer_name]_[YYYY-MM-DD]".
+  /// Sanitised so it is safe as a filename on all platforms.
+  String get fileBaseName {
+    final dateStr =
+        '${issueDate.year.toString().padLeft(4, '0')}-'
+        '${issueDate.month.toString().padLeft(2, '0')}-'
+        '${issueDate.day.toString().padLeft(2, '0')}';
+    final raw = '$invoiceNumber. ${customerName}_$dateStr';
+    // Replace characters that are illegal in filenames; collapse repeats.
+    return raw
+        .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .trim();
+  }
+
   factory Invoice.fromJson(Map<String, dynamic> json) {
     final itemsJson = json['invoice_items'] as List? ?? [];
     final emp = json['employees'] as Map<String, dynamic>?;

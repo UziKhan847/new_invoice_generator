@@ -30,13 +30,9 @@ class DownloadService {
     final date = invoice.issueDate;
     final year = '${date.year}';
     final month = _monthName(date.month);
-    final day = date.day.toString().padLeft(2, '0');
-    final monthShort = _monthShort(date.month);
-    final fileName =
-        '${invoice.customerName}_${invoice.invoiceNumber}_${day}_${monthShort}_${date.year}'
-            .replaceAll(RegExp(r'[^\w]'), '_');
+    final fileName = invoice.fileBaseName;
 
-    if (!context.mounted) return;
+  if (!context.mounted) return;
     if (Platform.isAndroid) {
       await _saveAndroid(
         context: context,
@@ -265,25 +261,6 @@ class DownloadService {
       'October',
       'November',
       'December',
-    ];
-    return months[m];
-  }
-
-  static String _monthShort(int m) {
-    const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
     ];
     return months[m];
   }

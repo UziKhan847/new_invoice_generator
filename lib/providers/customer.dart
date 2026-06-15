@@ -19,6 +19,23 @@ class CustomerNotifier extends AsyncNotifier<List<Customer>> {
     await _reload(company['id']);
   }
 
+  /// Bulk-add customers (used by xlsx import). Reloads once at the end.
+  /// Returns the number successfully added.
+  Future<int> addMany(List<Customer> customers) async {
+    final company = await ref.read(companyProvider.future);
+    int added = 0;
+    for (final c in customers) {
+      try {
+        await repo.addCustomer(company['id'], c);
+        added++;
+      } catch (_) {
+        // skip duplicates / failures, keep going
+      }
+    }
+    await _reload(company['id']);
+    return added;
+  }
+
   Future<void> _reload(String companyId) async {
     final raw = await repo.fetchCustomers(companyId);
     state = AsyncData(raw.map((json) => Customer.fromJson(json)).toList());
