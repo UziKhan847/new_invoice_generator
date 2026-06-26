@@ -23,6 +23,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _invoiceLimit = 5;
   int _chartIndex = 0;
+  // Which revenue bar is selected. null = use the default (highest-earning month).
+  int? _selectedBar;
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +82,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ButtonSegment(value: 2, label: Text('Count')),
                       ],
                       selected: {_chartIndex},
-                      onSelectionChanged: (s) =>
-                          setState(() => _chartIndex = s.first),
+                      onSelectionChanged: (s) => setState(() {
+                        _chartIndex = s.first;
+                        _selectedBar = null; // re-default to highest month
+                      }),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -97,6 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           _ChartHeader(
                             index: _chartIndex,
                             analytics: analytics,
+                            selectedBar: _selectedBar,
                           ),
                           const SizedBox(height: 18),
                           SizedBox(
@@ -108,6 +113,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: _chartIndex == 0
                                     ? RevenueBarChart(
                                         bars: analytics.monthlyBars,
+                                        selectedIndex: _selectedBar,
+                                        onBarTap: (i) =>
+                                            setState(() => _selectedBar = i),
                                       )
                                     : _chartIndex == 1
                                     ? Builder(
@@ -244,7 +252,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 class _ChartHeader extends StatelessWidget {
   final int index;
   final HomeAnalytics analytics;
-  const _ChartHeader({required this.index, required this.analytics});
+  final int? selectedBar;
+  const _ChartHeader({
+    required this.index,
+    required this.analytics,
+    this.selectedBar,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -255,14 +268,31 @@ class _ChartHeader extends StatelessWidget {
 
     if (index == 0) {
       final List<MonthlyBar> bars = analytics.monthlyBars;
-      MonthlyBar? maxBar;
-      for (final b in bars) {
-        if (maxBar == null || b.value >= maxBar.value) maxBar = b;
+      // Default (highest-earning) month index.
+      int defaultIdx = -1;
+      double maxVal = -1;
+      for (var i = 0; i < bars.length; i++) {
+        if (bars[i].value > maxVal) {
+          maxVal = bars[i].value;
+          defaultIdx = i;
+        }
       }
+      // Active bar = user's selection if valid, else the default.
+      final activeIdx =
+          (selectedBar != null &&
+              selectedBar! >= 0 &&
+              selectedBar! < bars.length)
+          ? selectedBar!
+          : defaultIdx;
+      final MonthlyBar? activeBar = activeIdx >= 0 && activeIdx < bars.length
+          ? bars[activeIdx]
+          : null;
       title = 'Monthly Revenue';
       subtitle = 'Total paid \$${analytics.totalRevenue.toStringAsFixed(2)}';
-      rightLabel = maxBar?.label.replaceAll('\n', ' ') ?? '';
-      rightValue = maxBar == null ? '' : '\$${maxBar.value.toStringAsFixed(0)}';
+      rightLabel = activeBar?.label.replaceAll('\n', ' ') ?? '';
+      rightValue = activeBar == null
+          ? ''
+          : '\$${activeBar.value.toStringAsFixed(0)}';
     } else if (index == 1) {
       title = 'Paid vs Unpaid';
       final collected = analytics.totalRevenue == 0
