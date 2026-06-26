@@ -10,7 +10,7 @@ class PhoneField extends StatefulWidget {
   final ValueChanged<String>
   onChanged; // emits formatted display string ('' if empty)
   final bool required;
-  final String label;
+  final String? label;
 
   const PhoneField({
     super.key,
@@ -136,7 +136,9 @@ class _PhoneFieldState extends State<PhoneField> {
                   LengthLimitingTextInputFormatter(20),
                 ],
                 decoration: InputDecoration(
-                  labelText: widget.label + (widget.required ? ' *' : ''),
+                  labelText: widget.label == null
+                      ? null
+                      : widget.label! + (widget.required ? ' *' : ''),
                   hintText: _country.example,
                   errorText: _error,
                   prefixIcon: const Icon(Icons.phone_outlined),

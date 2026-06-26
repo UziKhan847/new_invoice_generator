@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
+import 'package:new_invoice_generator/screens/widgets/phone_field.dart';
 import 'package:new_invoice_generator/models/employee.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
-import 'package:new_invoice_generator/screens/widgets/phone_field.dart';
 
 class EmployeesScreen extends ConsumerWidget {
   const EmployeesScreen({super.key});
@@ -17,98 +19,163 @@ class EmployeesScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (employees) {
+          final p = AppColors.of(context);
           if (employees.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.badge_outlined,
                     size: 64,
-                    color: Colors.grey,
+                    color: p.textTertiary.withAlpha(120),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No employees yet',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: AppTypography.body(p.textSecondary),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  const SizedBox(height: 4),
+                  Text(
                     'Tap + to add one',
-                    style: TextStyle(color: Colors.grey),
+                    style: AppTypography.caption(p.textTertiary),
                   ),
                 ],
               ),
             );
           }
-          return ListView.builder(
+          return ListView.separated(
             padding: EdgeInsets.fromLTRB(
+              16,
               12,
-              12,
-              12,
-              MediaQuery.paddingOf(context).bottom + 80,
+              16,
+              MediaQuery.paddingOf(context).bottom + 90,
             ),
             itemCount: employees.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, i) {
               final e = employees[i];
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(child: Text(e.name[0].toUpperCase())),
-                  title: Text(
-                    e.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    '${e.role}${e.email.isNotEmpty ? ' · ${e.email}' : ''}',
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => showDialog(
-                          context: context,
-                          builder: (_) => _EmployeeDialog(employee: e),
-                        ),
+              // Stable tinted avatar color from the name
+              final palettes = [
+                (p.primaryTint, p.primary),
+                (p.successBg, p.successText),
+                (p.purpleBg, p.purple),
+                (p.warningBg, p.warningText),
+              ];
+              final tone = palettes[e.name.hashCode.abs() % palettes.length];
+              return AppCard(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: tone.$1,
+                        shape: BoxShape.circle,
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                        ),
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('Remove employee?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: const Text('Cancel'),
+                      child: Text(
+                        e.name.isNotEmpty ? e.name[0].toUpperCase() : '?',
+                        style: AppTypography.title(
+                          tone.$2,
+                        ).copyWith(fontSize: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  e.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.title(
+                                    p.ink,
+                                  ).copyWith(fontSize: 16),
                                 ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
+                              ),
+                              if (e.role.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
                                   ),
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text(
-                                    'Remove',
-                                    style: TextStyle(color: Colors.white),
+                                  decoration: BoxDecoration(
+                                    color: p.primaryTint,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.pill,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    e.role,
+                                    style: AppTypography.caption(
+                                      p.primary,
+                                    ).copyWith(fontSize: 10.5),
                                   ),
                                 ),
                               ],
+                            ],
+                          ),
+                          if (e.email.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              e.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodyMuted(p.textSecondary),
                             ),
-                          );
-                          if (confirm == true) {
-                            await ref
-                                .read(employeeProvider.notifier)
-                                .delete(e.id);
-                          }
-                        },
+                          ],
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.edit_outlined, color: p.textSecondary),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => _EmployeeDialog(employee: e),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: p.dangerText),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Remove employee?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text(
+                                  'Remove',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await ref
+                              .read(employeeProvider.notifier)
+                              .delete(e.id);
+                        }
+                      },
+                    ),
+                  ],
                 ),
               );
             },
@@ -120,6 +187,8 @@ class EmployeesScreen extends ConsumerWidget {
           context: context,
           builder: (_) => const _EmployeeDialog(),
         ),
+        backgroundColor: AppColors.of(context).primary,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
     );
@@ -167,25 +236,29 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const _FieldLabel('Full name'),
             TextField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Full name'),
+              decoration: const InputDecoration(hintText: 'e.g. John'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            const _FieldLabel('Role / title'),
             TextField(
               controller: _role,
-              decoration: const InputDecoration(labelText: 'Role / title'),
+              decoration: const InputDecoration(hintText: 'e.g. Manager'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            const _FieldLabel('Email'),
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(hintText: 'name@example.com'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            const _FieldLabel('Phone (optional)'),
             PhoneField(
               initial: _phone,
-              label: 'Phone (optional)',
+              label: null,
               onChanged: (v) => _phone = v,
             ),
           ],
@@ -237,6 +310,24 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
               : Text(isEdit ? 'Update' : 'Save'),
         ),
       ],
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  const _FieldLabel(this.text);
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, left: 2),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      ),
     );
   }
 }
