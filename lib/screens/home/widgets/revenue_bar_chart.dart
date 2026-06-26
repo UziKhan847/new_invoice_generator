@@ -1,132 +1,226 @@
 import 'package:flutter/material.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/monthly_bar.dart';
 
+/// Horizontally-scrollable revenue bar chart. Bars have a fixed width so on a
+/// phone you see ~7 at a time and scroll for the rest (matches the design).
+/// A fixed Y-axis (with gridlines) stays pinned on the left.
 class RevenueBarChart extends StatelessWidget {
   final List<MonthlyBar> bars;
-  final double labelSize;
+  final void Function(int index)? onBarTap;
+  final int? selectedIndex;
 
-  const RevenueBarChart({super.key, required this.bars, this.labelSize = 10});
+  const RevenueBarChart({
+    super.key,
+    required this.bars,
+    this.onBarTap,
+    this.selectedIndex,
+  });
+
+  static const double _barWidth = 26;
+  static const double _barGap = 18;
+  static const double _yAxisWidth = 38;
 
   @override
   Widget build(BuildContext context) {
+    final p = AppColors.of(context);
     if (bars.isEmpty) {
-      return const Center(child: Text('No revenue data yet'));
+      return Center(
+          child: Text('No revenue data yet',
+              style: AppTypography.bodyMuted(p.textTertiary)));
     }
 
-    final max = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
-    final cs = Theme.of(context).colorScheme;
-    final isSingle = bars.length == 1;
+    final maxVal = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
+    // Round the axis max up to a "nice" number
+    final axisMax = _niceMax(maxVal);
+    // The default selected bar = highest (or the explicit selection)
+    final selected = selectedIndex ??
+        bars.indexWhere((b) => b.value == maxVal).clamp(0, bars.length - 1);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Reserve: value label slot + gap + month label slot + gap
-        final reservedVertical = labelSize * 2 + 10.0;
-        final availableBarHeight = constraints.maxHeight - reservedVertical;
+    return LayoutBuilder(builder: (context, constraints) {
+      final chartHeight = constraints.maxHeight;
+      const labelStrip = 22.0; // month labels under bars
+      const valueStrip = 16.0; // value label above the tallest
+      final plotHeight = chartHeight - labelStrip - valueStrip;
 
-        return Column(
-          children: [
-            // ── Bar area ────────────────────────────────────────────
-            SizedBox(
-              height: availableBarHeight,
-              child: Row(
-                crossAxisAlignment: .end,
-                mainAxisAlignment: isSingle ? .center : .spaceEvenly,
-                children: bars.map((bar) {
-                  final frac = max == 0
-                      ? 0.0
-                      : (bar.value / max).clamp(0.0, 1.0);
-                  final barH = ((availableBarHeight - labelSize - 4) * frac)
-                      .clamp(0.0, availableBarHeight - labelSize - 4);
-                  final isHighest = bar.value == max && max > 0;
-                  final barW = isSingle
-                      ? 56.0
-                      : ((constraints.maxWidth / bars.length) - 6).clamp(
-                          6.0,
-                          44.0,
-                        );
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Fixed Y axis ────────────────────────────────────────
+          SizedBox(
+            width: _yAxisWidth,
+            child: Padding(
+              padding: const EdgeInsets.only(top: valueStrip),
+              child: _YAxis(axisMax: axisMax, height: plotHeight, palette: p),
+            ),
+          ),
+          // ── Scrollable bars ─────────────────────────────────────
+          Expanded(
+            child: Stack(
+              children: [
+                // Gridlines behind the bars
+                Padding(
+                  padding: const EdgeInsets.only(top: valueStrip),
+                  child: _Gridlines(height: plotHeight, palette: p),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(bars.length, (i) {
+                      final bar = bars[i];
+                      final frac =
+                          axisMax == 0 ? 0.0 : (bar.value / axisMax).clamp(0.0, 1.0);
+                      final barH = plotHeight * frac;
+                      final isSel = i == selected;
 
-                  return SizedBox(
-                    width: barW,
-                    child: Column(
-                      mainAxisAlignment: .end,
-                      children: [
-                        // Value label
-                        SizedBox(
-                          height: labelSize + 2,
-                          child: bar.value > 0
-                              ? FittedBox(
-                                  fit: .scaleDown,
-                                  child: Text(
-                                    bar.value >= 1000
-                                        ? '\$${(bar.value / 1000).toStringAsFixed(1)}k'
-                                        : '\$${bar.value.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      fontSize: labelSize,
-                                      fontWeight: isHighest ? .bold : .normal,
-                                      color: isHighest
-                                          ? cs.primary
-                                          : cs.onSurface.withAlpha(160),
-                                    ),
-                                    textAlign: .center,
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                        const SizedBox(height: 2),
-                        // Bar
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 700),
-                          curve: Curves.easeOutCubic,
-                          height: barH,
-                          decoration: BoxDecoration(
-                            color: isHighest
-                                ? cs.primary
-                                : cs.primary.withAlpha(140),
-                            borderRadius: const BorderRadius.vertical(
-                              top: .circular(4),
-                            ),
+                      return Padding(
+                        padding: EdgeInsets.only(
+                            right: _barGap,
+                            left: i == 0 ? 4 : 0),
+                        child: GestureDetector(
+                          onTap: onBarTap == null ? null : () => onBarTap!(i),
+                          behavior: HitTestBehavior.opaque,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // Value label (only on selected)
+                              SizedBox(
+                                height: valueStrip,
+                                child: isSel && bar.value > 0
+                                    ? _ValueChip(
+                                        text: _money(bar.value), palette: p)
+                                    : null,
+                              ),
+                              // Bar
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeOutCubic,
+                                width: _barWidth,
+                                height: barH < 2 ? 2 : barH,
+                                decoration: BoxDecoration(
+                                  color: isSel ? p.primary : p.barMuted,
+                                  borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(5)),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              // Month label
+                              SizedBox(
+                                height: labelStrip - 6,
+                                width: _barWidth + 8,
+                                child: Text(
+                                  bar.label,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  style: AppTypography.numeric(
+                                      isSel ? p.ink : p.textTertiary),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
             ),
+          ),
+        ],
+      );
+    });
+  }
 
-            // ── Month labels ────────────────────────────────────────
-            const SizedBox(height: 4),
-            SizedBox(
-              height: labelSize + 2,
-              child: Row(
-                mainAxisAlignment: isSingle ? .center : .spaceEvenly,
-                children: bars.map((bar) {
-                  final barW = isSingle
-                      ? 56.0
-                      : ((constraints.maxWidth / bars.length) - 6).clamp(
-                          6.0,
-                          44.0,
-                        );
-                  return SizedBox(
-                    width: barW,
-                    child: FittedBox(
-                      fit: .scaleDown,
-                      child: Text(
-                        bar.label,
-                        textAlign: .center,
-                        style: TextStyle(
-                          fontSize: labelSize,
-                          color: cs.onSurface.withAlpha(160),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
+  static String _money(double v) => v >= 1000
+      ? '\$${(v / 1000).toStringAsFixed(1)}k'
+      : '\$${v.toStringAsFixed(0)}';
+
+  static double _niceMax(double v) {
+    if (v <= 0) return 100;
+    final mag = v.toString().split('.').first.length;
+    final step = [1, 2, 5, 10].map((s) => s * (mag <= 3 ? 100 : 1000)).toList();
+    for (final s in step) {
+      if (v <= s * 4) return (v / s).ceilToDouble() * s;
+    }
+    return (v / 1000).ceilToDouble() * 1000;
+  }
+}
+
+class _ValueChip extends StatelessWidget {
+  final String text;
+  final AppPalette palette;
+  const _ValueChip({required this.text, required this.palette});
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: palette.primaryTint,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(text,
+            style: AppTypography.numeric(palette.primary)
+                .copyWith(fontWeight: FontWeight.w800, fontSize: 10)),
+      ),
+    );
+  }
+}
+
+class _YAxis extends StatelessWidget {
+  final double axisMax, height;
+  final AppPalette palette;
+  const _YAxis(
+      {required this.axisMax, required this.height, required this.palette});
+  @override
+  Widget build(BuildContext context) {
+    const divisions = 4;
+    return SizedBox(
+      height: height,
+      child: Stack(
+        children: List.generate(divisions + 1, (i) {
+          final val = axisMax * (divisions - i) / divisions;
+          final top = (height / divisions) * i - 6;
+          return Positioned(
+            top: top.clamp(0.0, height),
+            right: 6,
+            child: Text(
+              val >= 1000
+                  ? '\$${(val / 1000).toStringAsFixed(0)}k'
+                  : '\$${val.toStringAsFixed(0)}',
+              style: AppTypography.numeric(palette.textTertiary),
             ),
-          ],
-        );
-      },
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _Gridlines extends StatelessWidget {
+  final double height;
+  final AppPalette palette;
+  const _Gridlines({required this.height, required this.palette});
+  @override
+  Widget build(BuildContext context) {
+    const divisions = 4;
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Stack(
+        children: List.generate(divisions + 1, (i) {
+          final top = (height / divisions) * i;
+          return Positioned(
+            top: top,
+            left: 0,
+            right: 0,
+            child: Container(height: 1, color: palette.gridline),
+          );
+        }),
+      ),
     );
   }
 }

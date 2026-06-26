@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/monthly_bar.dart';
 
 class CountLineChart extends StatelessWidget {
@@ -7,67 +8,138 @@ class CountLineChart extends StatelessWidget {
 
   const CountLineChart({super.key, required this.bars, this.labelSize = 10});
 
+  static const double _pointSpacing = 54; // px per data point
+  static const double _yAxisWidth = 38;
+
   @override
   Widget build(BuildContext context) {
+    final p = AppColors.of(context);
     if (bars.isEmpty || bars.every((b) => b.value == 0)) {
-      return const Center(child: Text('No invoice count data yet'));
+      return Center(
+        child: Text(
+          'No invoice count data yet',
+          style: AppTypography.bodyMuted(p.textTertiary),
+        ),
+      );
     }
 
-    final cs = Theme.of(context).colorScheme;
     final isSingle = bars.length == 1;
+    if (isSingle) {
+      return _SinglePointChart(
+        bar: bars.first,
+        color: p.primary,
+        labelSize: labelSize,
+      );
+    }
 
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 16, left: 4, right: 4),
-            child: isSingle
-                ? _SinglePointChart(
-                    bar: bars.first,
-                    color: cs.primary,
-                    labelSize: labelSize,
-                  )
-                : CustomPaint(
-                    painter: _LinePainter(
-                      bars: bars,
-                      color: cs.primary,
-                      labelSize: labelSize,
-                    ),
-                    size: Size.infinite,
-                  ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          height: labelSize + 4,
-          child: isSingle
-              ? Center(
-                  child: Text(
-                    bars.first.label,
-                    style: TextStyle(
-                      fontSize: labelSize,
-                      color: cs.onSurface.withAlpha(160),
-                    ),
-                  ),
-                )
-              : Row(
-                  children: bars
-                      .map(
-                        (b) => Expanded(
-                          child: Text(
-                            b.label,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: labelSize,
-                              color: cs.onSurface.withAlpha(160),
-                            ),
+    final maxVal = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
+    final axisMax = maxVal <= 0 ? 1.0 : maxVal.ceilToDouble();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chartHeight = constraints.maxHeight;
+        const labelStrip = 22.0;
+        final plotHeight = chartHeight - labelStrip;
+        // Total plot width: enough for all points, but at least fill the view.
+        final plotWidth = (bars.length * _pointSpacing).clamp(
+          constraints.maxWidth - _yAxisWidth,
+          5000.0,
+        );
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Pinned Y axis
+            SizedBox(
+              width: _yAxisWidth,
+              height: plotHeight,
+              child: _CountYAxis(
+                axisMax: axisMax,
+                height: plotHeight,
+                palette: p,
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: SizedBox(
+                  width: plotWidth,
+                  height: chartHeight,
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: plotHeight,
+                        child: CustomPaint(
+                          painter: _LinePainter(
+                            bars: bars,
+                            color: p.primary,
+                            axisMax: axisMax,
+                            gridline: p.gridline,
+                            labelColor: p.primary,
+                            labelSize: labelSize,
                           ),
+                          size: Size(plotWidth, plotHeight),
                         ),
-                      )
-                      .toList(),
+                      ),
+                      SizedBox(
+                        height: labelStrip,
+                        child: Row(
+                          children: bars
+                              .map(
+                                (b) => SizedBox(
+                                  width: plotWidth / bars.length,
+                                  child: Text(
+                                    b.label,
+                                    textAlign: TextAlign.center,
+                                    style: AppTypography.numeric(
+                                      p.textTertiary,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CountYAxis extends StatelessWidget {
+  final double axisMax, height;
+  final AppPalette palette;
+  const _CountYAxis({
+    required this.axisMax,
+    required this.height,
+    required this.palette,
+  });
+  @override
+  Widget build(BuildContext context) {
+    const divisions = 4;
+    return SizedBox(
+      height: height,
+      child: Stack(
+        children: List.generate(divisions + 1, (i) {
+          final val = axisMax * (divisions - i) / divisions;
+          final top = (height / divisions) * i - 6;
+          return Positioned(
+            top: top.clamp(0.0, height),
+            right: 6,
+            child: Text(
+              val.toStringAsFixed(0),
+              style: AppTypography.numeric(palette.textTertiary),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
@@ -120,24 +192,43 @@ class _SinglePointChart extends StatelessWidget {
 class _LinePainter extends CustomPainter {
   final List<MonthlyBar> bars;
   final Color color;
+  final double axisMax;
+  final Color gridline;
+  final Color labelColor;
   final double labelSize;
 
   _LinePainter({
     required this.bars,
     required this.color,
+    required this.axisMax,
+    required this.gridline,
+    required this.labelColor,
     required this.labelSize,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final max = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
-    if (max == 0) return;
+    final max = axisMax <= 0 ? 1.0 : axisMax;
 
-    final topPad = labelSize + 8;
+    final topPad = labelSize + 10;
     final chartH = size.height - topPad;
 
+    // Gridlines (4 divisions)
+    const divisions = 4;
+    final gridPaint = Paint()
+      ..color = gridline
+      ..strokeWidth = 1;
+    for (int i = 0; i <= divisions; i++) {
+      final y = topPad + chartH * i / divisions;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Inset points so first/last dots aren't on the edges
+    final inset = size.width / bars.length / 2;
+    final usableW = size.width - inset * 2;
+
     Offset point(int i) {
-      final x = (i / (bars.length - 1)) * size.width;
+      final x = inset + (i / (bars.length - 1)) * usableW;
       final y = topPad + chartH * (1 - bars[i].value / max);
       return Offset(x, y);
     }
@@ -148,13 +239,16 @@ class _LinePainter extends CustomPainter {
     // Using 0 and size.width ensures the fill covers the full chart width
     // Shader bounds from topPad to avoid gradient starting above the chart
     final fillPath = Path()
-      ..moveTo(0, size.height)
-      ..lineTo(points.first.dx, points.first.dy);
+      ..moveTo(points.first.dx, size.height)
+      ..lineTo(
+        points.first.dy == 0 ? points.first.dx : points.first.dx,
+        points.first.dy,
+      );
     for (int i = 1; i < points.length; i++) {
       fillPath.lineTo(points[i].dx, points[i].dy);
     }
     fillPath
-      ..lineTo(size.width, size.height)
+      ..lineTo(points.last.dx, size.height)
       ..close();
 
     canvas.drawPath(
@@ -221,5 +315,5 @@ class _LinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_LinePainter old) =>
-      old.bars != bars || old.labelSize != labelSize;
+      old.bars != bars || old.axisMax != axisMax || old.color != color;
 }

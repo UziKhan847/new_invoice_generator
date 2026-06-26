@@ -28,16 +28,17 @@ class ChartCard extends StatelessWidget {
           children: [
             Text(
               data.titleFor(chartIndex),
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 2),
             Text(
               data.subtitleFor(chartIndex),
               style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withAlpha(140)),
+                fontSize: 12,
+                color: cs.onSurface.withAlpha(140),
+              ),
             ),
             const SizedBox(height: 10),
             Expanded(
@@ -46,18 +47,12 @@ class ChartCard extends StatelessWidget {
                 child: KeyedSubtree(
                   key: ValueKey(chartIndex),
                   child: switch (chartIndex) {
-                    0 => RevenueBarChart(
-                        bars: data.revenueBars,
-                        labelSize: labelSize,
-                      ),
-                    1 => PaidUnpaidDonut(
-                        paid: data.paid,
-                        unpaid: data.unpaid,
-                      ),
+                    0 => RevenueBarChart(bars: data.revenueBars),
+                    1 => PaidUnpaidDonut(paid: data.paid, unpaid: data.unpaid),
                     _ => CountLineChart(
-                        bars: data.countBars,
-                        labelSize: labelSize,
-                      ),
+                      bars: data.countBars,
+                      labelSize: labelSize,
+                    ),
                   },
                 ),
               ),

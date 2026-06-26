@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 import 'package:new_invoice_generator/screens/import_customers.dart';
 import 'package:new_invoice_generator/widgets/add_customer_dialog.dart';
 
@@ -14,7 +16,15 @@ class CustomersScreen extends ConsumerStatefulWidget {
 
 class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   final Set<String> _selected = {};
+  final _searchCtrl = TextEditingController();
+  String _query = '';
   bool get _selecting => _selected.isNotEmpty;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   void _toggle(String id) {
     setState(() {
@@ -31,7 +41,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   @override
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(customerProvider);
-    final cs = Theme.of(context).colorScheme;
+    final p = AppColors.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
@@ -53,70 +63,91 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           : AppBar(
               title: const Text('Customers'),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.upload_file_outlined),
-                  tooltip: 'Import from spreadsheet',
-                  onPressed: () => Navigator.push(
+                _SquareIconButton(icon: Icons.search, onTap: () {}),
+                const SizedBox(width: 8),
+                _SquareIconButton(
+                  icon: Icons.upload_outlined,
+                  onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => const ImportCustomersScreen(),
                     ),
                   ),
                 ),
+                const SizedBox(width: 12),
               ],
             ),
       body: customersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (customers) {
-          if (customers.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.people_outline,
-                    size: 64,
-                    color: cs.onSurface.withAlpha(60),
+        data: (allCustomers) {
+          final customers = _query.isEmpty
+              ? allCustomers
+              : allCustomers.where((c) {
+                  final q = _query.toLowerCase();
+                  return c.name.toLowerCase().contains(q) ||
+                      c.email.toLowerCase().contains(q);
+                }).toList();
+
+          return Column(
+            children: [
+              // Search field
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or email',
+                    prefixIcon: Icon(Icons.search, color: p.textTertiary),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: Icon(Icons.clear, color: p.textTertiary),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No customers yet',
-                    style: TextStyle(color: cs.onSurface.withAlpha(120)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Tap + to add your first customer',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurface.withAlpha(100),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            );
-          }
-          return ListView.separated(
-            padding: EdgeInsets.fromLTRB(12, 12, 12, bottom + 80),
-            itemCount: customers.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final c = customers[i];
-              final selected = _selected.contains(c.id);
-              return _CustomerTile(
-                customer: c,
-                selected: selected,
-                selecting: _selecting,
-                onTap: () {
-                  if (_selecting) {
-                    _toggle(c.id);
-                  } else {
-                    showAddCustomerSheet(context, existing: c);
-                  }
-                },
-                onLongPress: () => _toggle(c.id),
-              );
-            },
+              // Count label
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppLabel(
+                    '${customers.length} customer${customers.length == 1 ? '' : 's'}',
+                  ),
+                ),
+              ),
+              Expanded(
+                child: customers.isEmpty
+                    ? _EmptyOrNoResults(hasQuery: _query.isNotEmpty)
+                    : ListView.separated(
+                        padding: EdgeInsets.fromLTRB(16, 4, 16, bottom + 90),
+                        itemCount: customers.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (context, i) {
+                          final c = customers[i];
+                          return _CustomerTile(
+                            customer: c,
+                            selected: _selected.contains(c.id),
+                            selecting: _selecting,
+                            onTap: () {
+                              if (_selecting) {
+                                _toggle(c.id);
+                              } else {
+                                showAddCustomerSheet(context, existing: c);
+                              }
+                            },
+                            onLongPress: () => _toggle(c.id),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),
@@ -124,6 +155,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           ? null
           : FloatingActionButton(
               onPressed: () => showAddCustomerSheet(context),
+              backgroundColor: p.primary,
+              foregroundColor: Colors.white,
               child: const Icon(Icons.add),
             ),
     );
@@ -159,12 +192,37 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   }
 }
 
+class _SquareIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _SquareIconButton({required this.icon, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final p = AppColors.of(context);
+    return Material(
+      color: p.surface,
+      borderRadius: BorderRadius.circular(AppRadii.button),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.button),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.button),
+            border: Border.all(color: p.cardBorder),
+          ),
+          child: Icon(icon, size: 20, color: p.ink),
+        ),
+      ),
+    );
+  }
+}
+
 class _CustomerTile extends StatelessWidget {
   final Customer customer;
-  final bool selected;
-  final bool selecting;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final bool selected, selecting;
+  final VoidCallback onTap, onLongPress;
 
   const _CustomerTile({
     required this.customer,
@@ -176,20 +234,19 @@ class _CustomerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final p = AppColors.of(context);
     final c = customer;
-    const radius = 14.0;
+    // Tags pulled from any free-text after the email-ish heuristics? We don't
+    // store tags, so this is omitted unless present in future. Keeping layout
+    // ready for name/email/phone.
 
     return Material(
-      // Material + clipBehavior makes the ink splash respect the rounded corners
-      color: selected ? cs.primaryContainer.withAlpha(90) : cs.surface,
+      color: selected ? p.primaryTint : p.surface,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         side: BorderSide(
-          color: selected
-              ? cs.primary.withAlpha(140)
-              : cs.outlineVariant.withAlpha(160),
+          color: selected ? p.primary.withAlpha(120) : p.cardBorder,
           width: selected ? 1.5 : 1,
         ),
       ),
@@ -197,66 +254,88 @@ class _CustomerTile extends StatelessWidget {
         onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              // Avatar or selection check
+              // Avatar / select
               selecting
-                  ? _SelectCircle(selected: selected, cs: cs)
-                  : CircleAvatar(
-                      backgroundColor: cs.primaryContainer,
+                  ? _SelectCircle(selected: selected, p: p)
+                  : Container(
+                      width: 46,
+                      height: 46,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: p.primaryTint,
+                        shape: BoxShape.circle,
+                      ),
                       child: Text(
                         c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                        style: TextStyle(
-                          color: cs.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTypography.title(
+                          p.primary,
+                        ).copyWith(fontSize: 18),
                       ),
                     ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       c.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.title(p.ink).copyWith(fontSize: 16),
                     ),
-                    if (c.email.isNotEmpty)
+                    if (c.email.isNotEmpty) ...[
+                      const SizedBox(height: 3),
                       Text(
                         c.email,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: cs.onSurface.withAlpha(170),
-                        ),
-                      ),
-                    if (c.phone.isNotEmpty)
-                      Text(
-                        c.phone,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurface.withAlpha(140),
-                        ),
-                      ),
-                    if (c.address.isNotEmpty)
-                      Text(
-                        c.address.singleLine,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurface.withAlpha(130),
-                        ),
+                        style: AppTypography.bodyMuted(p.textSecondary),
                       ),
+                    ],
+                    if (c.phone.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.phone_outlined,
+                            size: 13,
+                            color: p.textTertiary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            c.phone,
+                            style: AppTypography.caption(p.textTertiary),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (c.address.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 13,
+                            color: p.gold,
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              c.address.singleLine,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption(p.gold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
               if (!selecting)
-                Icon(
-                  Icons.chevron_right,
-                  color: cs.onSurface.withAlpha(90),
-                  size: 20,
-                ),
+                Icon(Icons.chevron_right, color: p.textTertiary, size: 22),
             ],
           ),
         ),
@@ -267,24 +346,55 @@ class _CustomerTile extends StatelessWidget {
 
 class _SelectCircle extends StatelessWidget {
   final bool selected;
-  final ColorScheme cs;
-  const _SelectCircle({required this.selected, required this.cs});
-
+  final AppPalette p;
+  const _SelectCircle({required this.selected, required this.p});
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 40,
-      height: 40,
+      width: 46,
+      height: 46,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: selected ? cs.primary : Colors.transparent,
-        border: Border.all(
-          color: selected ? cs.primary : cs.outlineVariant,
-          width: 2,
-        ),
+        color: selected ? p.primary : Colors.transparent,
+        border: Border.all(color: selected ? p.primary : p.border, width: 2),
       ),
-      child: selected ? Icon(Icons.check, size: 20, color: cs.onPrimary) : null,
+      child: selected
+          ? const Icon(Icons.check, size: 22, color: Colors.white)
+          : null,
+    );
+  }
+}
+
+class _EmptyOrNoResults extends StatelessWidget {
+  final bool hasQuery;
+  const _EmptyOrNoResults({required this.hasQuery});
+  @override
+  Widget build(BuildContext context) {
+    final p = AppColors.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            hasQuery ? Icons.search_off : Icons.people_outline,
+            size: 64,
+            color: p.textTertiary.withAlpha(120),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            hasQuery ? 'No matches' : 'No customers yet',
+            style: AppTypography.body(p.textSecondary),
+          ),
+          if (!hasQuery) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Tap + to add your first customer',
+              style: AppTypography.caption(p.textTertiary),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

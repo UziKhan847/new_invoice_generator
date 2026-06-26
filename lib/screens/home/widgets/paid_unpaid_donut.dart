@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 
 class PaidUnpaidDonut extends StatelessWidget {
   final double paid;
@@ -9,89 +10,74 @@ class PaidUnpaidDonut extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = paid + unpaid;
-    final cs = Theme.of(context).colorScheme;
+    final p = AppColors.of(context);
 
     if (total == 0) {
       return Center(
-        child: Text(
-          'No data',
-          style: TextStyle(color: cs.onSurface.withAlpha(100)),
-        ),
+        child: Text('No data', style: AppTypography.bodyMuted(p.textTertiary)),
       );
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Donut takes 55% of height, legend gets remaining
+        // Reserve space for the legend cards (~74px) + the gap, then let the
+        // donut fill whatever vertical space remains. This guarantees the column
+        // never overflows its parent.
+        const legendHeight = 74.0;
+        const gap = 18.0;
+        final available = constraints.maxHeight - legendHeight - gap;
         final donutSize = math
-            .min(constraints.maxWidth, constraints.maxHeight * 0.58)
-            .clamp(80.0, 220.0);
+            .min(constraints.maxWidth, available > 0 ? available : 0)
+            .clamp(70.0, 200.0)
+            .toDouble();
 
         return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Donut (centred) ───────────────────────────────────
-            Center(
-              child: SizedBox(
-                width: donutSize,
-                height: donutSize,
-                child: CustomPaint(
-                  painter: _DonutPainter(paid: paid, unpaid: unpaid),
+            // Donut takes the flexible top area, centered
+            Expanded(
+              child: Center(
+                child: SizedBox(
+                  width: donutSize,
+                  height: donutSize,
+                  child: CustomPaint(
+                    painter: _DonutPainter(
+                      paid: paid,
+                      unpaid: unpaid,
+                      paidColor: p.primary,
+                      unpaidColor: p.gold,
+                      track: p.chartTrack,
+                      centerText: p.primary,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
-            // ── Legend row ────────────────────────────────────────
+            const SizedBox(height: gap),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _Dot(Colors.green),
-                const SizedBox(width: 6),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Paid', style: TextStyle(fontSize: 11)),
-                    Text(
-                      '\$${paid.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    if (total > 0)
-                      Text(
-                        '${(paid / total * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.green.withAlpha(200),
-                        ),
-                      ),
-                  ],
+                Expanded(
+                  child: _LegendCard(
+                    label: 'Paid',
+                    amount: paid,
+                    pct: paid / total * 100,
+                    dot: p.primary,
+                    bg: p.primaryTint,
+                    border: p.primaryPanelBorder,
+                    text: p.primary,
+                  ),
                 ),
-                const SizedBox(width: 24),
-                _Dot(Colors.orange),
-                const SizedBox(width: 6),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Unpaid', style: TextStyle(fontSize: 11)),
-                    Text(
-                      '\$${unpaid.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    if (total > 0)
-                      Text(
-                        '${(unpaid / total * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.orange.withAlpha(200),
-                        ),
-                      ),
-                  ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _LegendCard(
+                    label: 'Unpaid',
+                    amount: unpaid,
+                    pct: unpaid / total * 100,
+                    dot: p.gold,
+                    bg: p.warningBg,
+                    border: p.warningBorder,
+                    text: p.warningText,
+                  ),
                 ),
               ],
             ),
@@ -102,21 +88,72 @@ class PaidUnpaidDonut extends StatelessWidget {
   }
 }
 
-class _Dot extends StatelessWidget {
-  final Color color;
-  const _Dot(this.color);
+class _LegendCard extends StatelessWidget {
+  final String label;
+  final double amount, pct;
+  final Color dot, bg, border, text;
+  const _LegendCard({
+    required this.label,
+    required this.amount,
+    required this.pct,
+    required this.dot,
+    required this.bg,
+    required this.border,
+    required this.text,
+  });
+
   @override
-  Widget build(BuildContext context) => Container(
-    width: 10,
-    height: 10,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.button),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(label, style: AppTypography.caption(text)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '\$${amount.toStringAsFixed(2)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.title(text).copyWith(fontSize: 16),
+          ),
+          Text(
+            '${pct.toStringAsFixed(1)}%',
+            style: AppTypography.numeric(text.withAlpha(190)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _DonutPainter extends CustomPainter {
-  final double paid;
-  final double unpaid;
-  _DonutPainter({required this.paid, required this.unpaid});
+  final double paid, unpaid;
+  final Color paidColor, unpaidColor, track, centerText;
+  _DonutPainter({
+    required this.paid,
+    required this.unpaid,
+    required this.paidColor,
+    required this.unpaidColor,
+    required this.track,
+    required this.centerText,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -125,21 +162,23 @@ class _DonutPainter extends CustomPainter {
 
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 4;
-    final strokeWidth = (radius * 0.38).clamp(10.0, 28.0);
+    final strokeWidth = (radius * 0.30).clamp(12.0, 30.0);
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
+      ..strokeCap = StrokeCap.round;
+
+    // Track
+    paint.color = track;
+    canvas.drawArc(rect, 0, 2 * math.pi, false, paint);
 
     const startAngle = -math.pi / 2;
     final paidSweep = (paid / total) * 2 * math.pi;
 
-    paint.color = Colors.green;
-    canvas.drawArc(rect, startAngle, paidSweep, false, paint);
-
-    paint.color = Colors.orange;
+    // Unpaid first (under), then paid on top
+    paint.color = unpaidColor;
     canvas.drawArc(
       rect,
       startAngle + paidSweep,
@@ -148,7 +187,9 @@ class _DonutPainter extends CustomPainter {
       paint,
     );
 
-    // Centre % label
+    paint.color = paidColor;
+    canvas.drawArc(rect, startAngle, paidSweep, false, paint);
+
     final pct = (paid / total * 100).toStringAsFixed(0);
     final tp = TextPainter(
       text: TextSpan(
@@ -156,16 +197,20 @@ class _DonutPainter extends CustomPainter {
           TextSpan(
             text: '$pct%\n',
             style: TextStyle(
-              fontSize: radius * 0.28,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: radius * 0.34,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1,
+              color: centerText,
             ),
           ),
           TextSpan(
             text: 'paid',
             style: TextStyle(
-              fontSize: radius * 0.16,
-              color: Colors.green.withAlpha(180),
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: radius * 0.15,
+              fontWeight: FontWeight.w600,
+              color: centerText.withAlpha(170),
             ),
           ),
         ],

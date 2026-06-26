@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 import 'package:new_invoice_generator/services/tax_report.dart';
 import 'package:new_invoice_generator/utils/loading_overlay.dart';
 
@@ -20,7 +22,7 @@ class _TaxReportScreenState extends ConsumerState<TaxReportScreen> {
   Widget build(BuildContext context) {
     final invoicesAsync = ref.watch(invoiceProvider);
     final expensesAsync = ref.watch(expenseProvider);
-    final cs = Theme.of(context).colorScheme;
+    final p = AppColors.of(context);
     final now = DateTime.now();
 
     return Scaffold(
@@ -57,101 +59,201 @@ class _TaxReportScreenState extends ConsumerState<TaxReportScreen> {
             return ListView(
               padding: EdgeInsets.fromLTRB(
                 16,
-                16,
+                8,
                 16,
                 MediaQuery.paddingOf(context).bottom + 24,
               ),
               children: [
                 // Year selector
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left),
-                          onPressed: () => setState(() => _year--),
-                        ),
-                        const SizedBox(width: 24),
-                        Text(
-                          '$_year',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 24),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right),
-                          onPressed: _year >= now.year
-                              ? null
-                              : () => setState(() => _year++),
-                        ),
-                      ],
-                    ),
+                AppCard(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _RoundIconBtn(
+                        icon: Icons.chevron_left,
+                        onTap: () => setState(() => _year--),
+                      ),
+                      Text(
+                        '$_year',
+                        style: AppTypography.display(
+                          p.ink,
+                        ).copyWith(fontSize: 22),
+                      ),
+                      _RoundIconBtn(
+                        icon: Icons.chevron_right,
+                        onTap: _year >= now.year
+                            ? null
+                            : () => setState(() => _year++),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Summary cards
-                _SummaryGrid(
+                // Net tax owing hero
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const AppLabel('NET TAX OWING'),
+                          AppPill(
+                            label: netTax >= 0 ? 'Owing' : 'Refund',
+                            bg: netTax >= 0 ? p.dangerBg : p.successBg,
+                            border: netTax >= 0
+                                ? p.dangerBorder
+                                : p.successBorder,
+                            text: netTax >= 0 ? p.dangerText : p.successText,
+                            dot: Icons.circle,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '\$${netTax.abs().toStringAsFixed(2)}',
+                        style: AppTypography.amount(
+                          netTax >= 0 ? p.dangerText : p.successText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'HST/GST collected − input tax credits',
+                        style: AppTypography.bodyMuted(p.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // 2x2 tinted stat grid
+                Row(
                   children: [
-                    _SummaryCard(
-                      label: 'Revenue (pre-tax)',
-                      value: '\$${totalRevenue.toStringAsFixed(2)}',
-                      icon: Icons.trending_up,
-                      color: Colors.green,
+                    Expanded(
+                      child: _TaxStat(
+                        label: 'Revenue (pre-tax)',
+                        value: '\$${totalRevenue.toStringAsFixed(2)}',
+                        icon: Icons.trending_up,
+                        tint: p.successBg,
+                        fg: p.successText,
+                        p: p,
+                      ),
                     ),
-                    _SummaryCard(
-                      label: 'HST/GST Collected',
-                      value: '\$${taxCollected.toStringAsFixed(2)}',
-                      icon: Icons.account_balance_outlined,
-                      color: Colors.blue,
-                    ),
-                    _SummaryCard(
-                      label: 'Total Expenses',
-                      value: '\$${totalExpenses.toStringAsFixed(2)}',
-                      icon: Icons.trending_down,
-                      color: Colors.orange,
-                    ),
-                    _SummaryCard(
-                      label: 'Input Tax Credits',
-                      value: '\$${inputTax.toStringAsFixed(2)}',
-                      icon: Icons.receipt_outlined,
-                      color: Colors.teal,
-                    ),
-                    _SummaryCard(
-                      label: 'Net Tax Owing',
-                      value: '\$${netTax.toStringAsFixed(2)}',
-                      icon: Icons.calculate_outlined,
-                      color: netTax >= 0 ? Colors.red : Colors.green,
-                      subtitle: netTax < 0 ? 'You may have a refund' : null,
-                    ),
-                    _SummaryCard(
-                      label: 'Net Profit',
-                      value: '\$${netProfit.toStringAsFixed(2)}',
-                      icon: Icons.savings_outlined,
-                      color: netProfit >= 0 ? Colors.green : Colors.red,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _TaxStat(
+                        label: 'HST/GST collected',
+                        value: '\$${taxCollected.toStringAsFixed(2)}',
+                        icon: Icons.account_balance_outlined,
+                        tint: p.primaryTint,
+                        fg: p.primary,
+                        p: p,
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TaxStat(
+                        label: 'Total expenses',
+                        value: '\$${totalExpenses.toStringAsFixed(2)}',
+                        icon: Icons.trending_down,
+                        tint: p.warningBg,
+                        fg: p.warningText,
+                        p: p,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _TaxStat(
+                        label: 'Input tax credits',
+                        value: '\$${inputTax.toStringAsFixed(2)}',
+                        icon: Icons.receipt_outlined,
+                        tint: p.successBg,
+                        fg: p.successText,
+                        p: p,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Net profit banner
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: netProfit >= 0 ? p.successText : p.dangerText,
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(50),
+                          borderRadius: BorderRadius.circular(AppRadii.tile),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'NET PROFIT',
+                            style: AppTypography.label(
+                              Colors.white.withAlpha(210),
+                            ),
+                          ),
+                          Text(
+                            '\$${netProfit.toStringAsFixed(2)}',
+                            style: AppTypography.amount(
+                              Colors.white,
+                            ).copyWith(fontSize: 26),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Info rows
+                AppCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      _InfoRow(
+                        label: 'Paid invoices in $_year',
+                        value: '${yearInvoices.length}',
+                      ),
+                      Divider(height: 1, color: p.border),
+                      _InfoRow(
+                        label: 'Expenses logged in $_year',
+                        value: '${yearExpenses.length}',
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 20),
 
-                // Invoice count
-                _InfoRow(
-                  label: 'Paid invoices in $_year',
-                  value: '${yearInvoices.length}',
-                ),
-                _InfoRow(
-                  label: 'Expenses logged in $_year',
-                  value: '${yearExpenses.length}',
-                ),
-                const SizedBox(height: 24),
-
                 // Export button
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                FilledButton.icon(
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
                   label: const Text('Export Full Tax Report PDF'),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
                   onPressed: (yearInvoices.isEmpty && yearExpenses.isEmpty)
@@ -180,10 +282,7 @@ class _TaxReportScreenState extends ConsumerState<TaxReportScreen> {
                     child: Text(
                       'No data for $_year. Add paid invoices or expenses first.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: cs.onSurface.withAlpha(120),
-                      ),
+                      style: AppTypography.caption(p.textTertiary),
                     ),
                   ),
               ],
@@ -195,76 +294,81 @@ class _TaxReportScreenState extends ConsumerState<TaxReportScreen> {
   }
 }
 
-class _SummaryGrid extends StatelessWidget {
-  final List<Widget> children;
-  const _SummaryGrid({required this.children});
-
+class _RoundIconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _RoundIconBtn({required this.icon, this.onTap});
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 2.2,
-      children: children,
+    final p = AppColors.of(context);
+    final enabled = onTap != null;
+    return Material(
+      color: p.surfaceAlt,
+      borderRadius: BorderRadius.circular(AppRadii.button),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.button),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.button),
+            border: Border.all(color: p.cardBorder),
+          ),
+          child: Icon(
+            icon,
+            color: enabled ? p.ink : p.textTertiary.withAlpha(120),
+          ),
+        ),
+      ),
     );
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  final String label;
-  final String value;
+class _TaxStat extends StatelessWidget {
+  final String label, value;
   final IconData icon;
-  final Color color;
-  final String? subtitle;
-  const _SummaryCard({
+  final Color tint, fg;
+  final AppPalette p;
+  const _TaxStat({
     required this.label,
     required this.value,
     required this.icon,
-    required this.color,
-    this.subtitle,
+    required this.tint,
+    required this.fg,
+    required this.p,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withAlpha(18),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(50)),
+        color: tint,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: fg.withAlpha(40)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 10, color: color.withAlpha(200)),
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: color,
-                  ),
-                ),
-                if (subtitle != null)
-                  Text(
-                    subtitle!,
-                    style: TextStyle(fontSize: 9, color: color.withAlpha(180)),
-                  ),
-              ],
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: p.surface.withAlpha(150),
+              borderRadius: BorderRadius.circular(AppRadii.tile),
             ),
+            child: Icon(icon, color: fg, size: 17),
           ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.amount(p.ink).copyWith(fontSize: 21),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: AppTypography.caption(p.textSecondary)),
         ],
       ),
     );
@@ -272,24 +376,18 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
+  final String label, value;
   const _InfoRow({required this.label, required this.value});
-
   @override
   Widget build(BuildContext context) {
+    final p = AppColors.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(160),
-            ),
-          ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(label, style: AppTypography.body(p.ink)),
+          Text(value, style: AppTypography.title(p.ink).copyWith(fontSize: 16)),
         ],
       ),
     );

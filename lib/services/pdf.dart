@@ -8,6 +8,14 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfService {
+  // Design palette (matches the app's refined-indigo theme)
+  static const _brandIndigo = PdfColor.fromInt(0xFF2C56B5);
+  static const _inkColor = PdfColor.fromInt(0xFF172234);
+  static const _mutedColor = PdfColor.fromInt(0xFF5C6878);
+  static const _tintIndigo = PdfColor.fromInt(0xFFEEF3FC);
+  static const _tintBorder = PdfColor.fromInt(0xFFD7E2F6);
+  static const _successGreen = PdfColor.fromInt(0xFF157A45);
+
   /// Returns raw PDF bytes — used by email, preview, and print.
   /// [company] is the live company record used as a fallback for invoices
   /// created before business-info snapshots existed (or when snapshot is empty).
@@ -96,7 +104,7 @@ class PdfService {
                           style: pw.TextStyle(
                             fontSize: 20,
                             fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blueGrey800,
+                            color: _inkColor,
                           ),
                         ),
                         pw.SizedBox(height: 4),
@@ -152,9 +160,10 @@ class PdfService {
                       pw.Text(
                         invoice.isPaid ? 'RECEIPT' : 'INVOICE',
                         style: pw.TextStyle(
-                          fontSize: 24,
+                          fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.blueGrey800,
+                          letterSpacing: 2,
+                          color: _brandIndigo,
                         ),
                       ),
                     ],
@@ -162,12 +171,59 @@ class PdfService {
                 ],
               ),
               pw.SizedBox(height: 8),
-              pw.Text(
-                '#${invoice.invoiceNumber}',
-                style: const pw.TextStyle(
-                  fontSize: 13,
-                  color: PdfColors.grey600,
-                ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Text(
+                    '#${invoice.invoiceNumber}',
+                    style: pw.TextStyle(
+                      fontSize: 22,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _inkColor,
+                    ),
+                  ),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
+                    decoration: pw.BoxDecoration(
+                      color: invoice.isPaid
+                          ? const PdfColor.fromInt(0xFFE7F4EC)
+                          : const PdfColor.fromInt(0xFFFBF1DE),
+                      borderRadius: const pw.BorderRadius.all(
+                        pw.Radius.circular(20),
+                      ),
+                    ),
+                    child: pw.Row(
+                      mainAxisSize: pw.MainAxisSize.min,
+                      children: [
+                        pw.Container(
+                          width: 7,
+                          height: 7,
+                          decoration: pw.BoxDecoration(
+                            color: invoice.isPaid
+                                ? _successGreen
+                                : const PdfColor.fromInt(0xFFA87A22),
+                            shape: pw.BoxShape.circle,
+                          ),
+                        ),
+                        pw.SizedBox(width: 6),
+                        pw.Text(
+                          invoice.isPaid ? 'Paid' : 'Unpaid',
+                          style: pw.TextStyle(
+                            fontSize: 11,
+                            fontWeight: pw.FontWeight.bold,
+                            color: invoice.isPaid
+                                ? _successGreen
+                                : const PdfColor.fromInt(0xFFA87A22),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               pw.SizedBox(height: 16),
               pw.Divider(color: PdfColors.grey300),
@@ -439,11 +495,12 @@ class PdfService {
 
               // ── Payment info — conditional on paymentMethod ────────────
               pw.Container(
-                padding: const pw.EdgeInsets.all(12),
+                padding: const pw.EdgeInsets.all(14),
                 decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300),
+                  color: _tintIndigo,
+                  border: pw.Border.all(color: _tintBorder),
                   borderRadius: const pw.BorderRadius.all(
-                    pw.Radius.circular(6),
+                    pw.Radius.circular(10),
                   ),
                 ),
                 child: pw.Column(
@@ -494,7 +551,7 @@ class PdfService {
                     else ...[
                       if (invoice.dueDate != null)
                         pw.Text(
-                          'Due by: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}',
+                          'Due by: \${invoice.dueDate!.toLocal().toString().split(\' \')[0]}',
                           style: const pw.TextStyle(
                             fontSize: 11,
                             color: PdfColors.orange700,
@@ -524,7 +581,7 @@ class PdfService {
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Please include invoice #${invoice.invoiceNumber} in the e-transfer message.',
+                          'Please include invoice #\${invoice.invoiceNumber} in the e-transfer message.',
                           style: const pw.TextStyle(
                             fontSize: 9,
                             color: PdfColors.grey600,
@@ -610,7 +667,7 @@ class PdfService {
                       style: pw.TextStyle(
                         fontSize: 12,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blueGrey700,
+                        color: _brandIndigo,
                       ),
                     ),
                     pw.SizedBox(height: 2),
@@ -660,19 +717,25 @@ class PdfService {
     bool bold = false,
     bool large = false,
     PdfColor? color,
+    PdfColor? valueColor,
   }) {
-    final style = pw.TextStyle(
+    final labelStyle = pw.TextStyle(
       fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-      fontSize: large ? 14 : 11,
-      color: color,
+      fontSize: large ? 15 : 11,
+      color: color ?? (large ? _inkColor : _mutedColor),
+    );
+    final valueStyle = pw.TextStyle(
+      fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+      fontSize: large ? 18 : 11,
+      color: valueColor ?? color ?? (large ? _brandIndigo : _inkColor),
     );
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 3),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: style),
-          pw.Text(value, style: style),
+          pw.Text(label, style: labelStyle),
+          pw.Text(value, style: valueStyle),
         ],
       ),
     );

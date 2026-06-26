@@ -21,7 +21,10 @@ void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     if (taskName == _kRecurringTask) {
       // Re-init Supabase in the background isolate
-      await Supabase.initialize(url: url, publishableKey: anonKey);
+      await Supabase.initialize(
+        url: 'YOUR_SUPABASE_URL',
+        publishableKey: 'YOUR_SUPABASE_ANON_KEY',
+      );
       await NotificationService.init();
 
       // Recurring check runs via RecurringInvoiceRunner on app resume
@@ -63,11 +66,12 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appMode = ref.watch(themeProvider);
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Invoice Generator',
-      theme: AppThemes.light(),
+      theme: AppTheme.light(),
       darkTheme: appMode == AppThemeMode.oled
-          ? AppThemes.oled()
-          : AppThemes.dark(),
+          ? AppTheme.oled()
+          : AppTheme.dark(),
       themeMode: appMode.flutterMode,
       home: const AuthGate(),
     );

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/screens/invoice/widgets/quick_menu.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/invoice.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/invoice.dart';
 import 'package:new_invoice_generator/screens/invoice/detail.dart';
-import 'package:new_invoice_generator/screens/invoice/widgets/quick_menu.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/status_badge.dart';
 import 'package:new_invoice_generator/services/storage.dart';
 
@@ -191,13 +192,15 @@ class InvoiceTile extends ConsumerWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     color: isPaid
-                        ? Colors.green.withAlpha(25)
-                        : cs.primary.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
+                        ? AppColors.of(context).successBg
+                        : AppColors.of(context).primaryTint,
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                   ),
                   child: Icon(
                     isPaid ? Icons.check_circle_outline : Icons.receipt_long,
-                    color: isPaid ? Colors.green : cs.primary,
+                    color: isPaid
+                        ? AppColors.of(context).successText
+                        : AppColors.of(context).primary,
                     size: 20,
                   ),
                 ),
@@ -214,20 +217,20 @@ class InvoiceTile extends ConsumerWidget {
                         Row(
                           children: [
                             if (invoice.isPrivate) ...[
-                              const Icon(
+                              Icon(
                                 Icons.lock_outline,
                                 size: 12,
-                                color: Colors.purple,
+                                color: AppColors.of(context).purple,
                               ),
                               const SizedBox(width: 4),
                             ],
                             Text(
                               invoice.invoiceNumber,
                               style: TextStyle(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 fontSize: 14,
                                 color: invoice.isPrivate
-                                    ? Colors.purple
+                                    ? AppColors.of(context).purple
                                     : cs.onSurface,
                               ),
                             ),

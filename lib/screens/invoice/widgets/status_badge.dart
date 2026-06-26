@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:new_invoice_generator/app_theme.dart';
 
 class StatusBadge extends StatelessWidget {
   final bool isPaid;
@@ -6,22 +7,20 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isPaid ? Colors.green : Colors.orange;
+    final p = AppColors.of(context);
+    final bg = isPaid ? p.successBg : p.warningBg;
+    final border = isPaid ? p.successBorder : p.warningBorder;
+    final text = isPaid ? p.successText : p.warningText;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color, width: 1.2),
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(color: border),
       ),
       child: Text(
         isPaid ? 'Paid' : 'Unpaid',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color,
-          letterSpacing: 0.3,
-        ),
+        style: AppTypography.caption(text).copyWith(fontSize: 11.5),
       ),
     );
   }
