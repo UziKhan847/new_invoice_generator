@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
-import 'package:new_invoice_generator/screens/desktop/widgets.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/widgets/add_customer_dialog.dart';
 
 /// Per-customer billing aggregates derived from invoices.
@@ -252,15 +252,43 @@ class _CustomerRow extends StatelessWidget {
                   ).copyWith(fontSize: 13),
                 ),
               ),
-              // Tags (not stored yet → em dash)
+              // Tags
               Expanded(
                 flex: 3,
-                child: Text(
-                  '—',
-                  style: AppTypography.body(
-                    p.textTertiary,
-                  ).copyWith(fontSize: 13),
-                ),
+                child: c.tags.isEmpty
+                    ? Text(
+                        '—',
+                        style: AppTypography.body(
+                          p.textTertiary,
+                        ).copyWith(fontSize: 13),
+                      )
+                    : Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: c.tags
+                            .take(3)
+                            .map(
+                              (t) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: p.primaryTint,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.pill,
+                                  ),
+                                ),
+                                child: Text(
+                                  t,
+                                  style: AppTypography.caption(
+                                    p.primary,
+                                  ).copyWith(fontSize: 11),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
               ),
               // Invoice count
               Expanded(

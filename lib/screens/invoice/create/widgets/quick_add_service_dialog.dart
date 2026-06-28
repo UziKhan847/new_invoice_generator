@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:new_invoice_generator/models/invoice_item.dart';
+import 'package:new_invoice_generator/models/invoice/item.dart';
 import 'package:new_invoice_generator/models/service.dart';
 
 class QuickAddServiceDialog extends StatefulWidget {

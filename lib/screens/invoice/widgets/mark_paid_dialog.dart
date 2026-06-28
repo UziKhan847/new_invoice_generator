@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/expense.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 
 /// Shows a "Mark as Paid" confirmation.
 /// If the invoice has a Stripe payment link, also offers to log the Stripe fee

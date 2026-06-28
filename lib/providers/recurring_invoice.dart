@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
-import 'package:new_invoice_generator/models/invoice_item.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/item.dart';
 import 'package:new_invoice_generator/models/recurring_invoice.dart';
 import 'package:new_invoice_generator/providers/company.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/repositories/recurring_invoice.dart';
 
 class RecurringInvoiceNotifier

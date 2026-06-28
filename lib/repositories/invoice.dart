@@ -1,5 +1,5 @@
 import 'package:new_invoice_generator/main.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 
 class InvoiceRepository {
   Future<List<Invoice>> fetchInvoices(String companyId) async {

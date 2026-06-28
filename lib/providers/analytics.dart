@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 
 class AnalyticsData {
   final double totalRevenue;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/screens/charts/data.dart';
 import 'package:new_invoice_generator/screens/charts/widgets/card.dart';
 import 'package:new_invoice_generator/screens/charts/widgets/filter_chips.dart';

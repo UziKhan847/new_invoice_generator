@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/invoice/document_view.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/models/customer.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
-import 'package:new_invoice_generator/screens/desktop/invoice/document_view.dart';
-import 'package:new_invoice_generator/screens/desktop/widgets.dart';
+import 'package:new_invoice_generator/providers/invoice/event.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
@@ -108,11 +109,16 @@ class DesktopInvoiceDetail extends ConsumerWidget {
                                   icon: Icons.check_circle_outline,
                                   label: 'Mark as paid',
                                   filled: true,
-                                  onTap: () => showMarkPaidDialog(
-                                    context: context,
-                                    ref: ref,
-                                    invoice: inv,
-                                  ),
+                                  onTap: () async {
+                                    await showMarkPaidDialog(
+                                      context: context,
+                                      ref: ref,
+                                      invoice: inv,
+                                    );
+                                    ref.invalidate(
+                                      invoiceEventsProvider(inv.id ?? ''),
+                                    );
+                                  },
                                 ),
                               if (inv.isPaid)
                                 _RailButton(
@@ -257,24 +263,44 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-class _ActivityCard extends StatelessWidget {
+class _ActivityCard extends ConsumerWidget {
   final Invoice invoice;
   const _ActivityCard({required this.invoice});
 
-  @override
-  Widget build(BuildContext context) {
-    final p = AppColors.of(context);
+  Color _colorFor(String type, AppPalette p) => switch (type) {
+    'paid' => p.successText,
+    'sent' => p.purple,
+    'viewed' => p.primary,
+    'downloaded' => p.warningText,
+    _ => p.textTertiary,
+  };
 
-    // Synthesize a timeline from the dates we have. Newest first.
-    final created = invoice.issueDate;
-    final events = <_Event>[
-      _Event('Invoice created', created, p.textTertiary),
-      _Event('Invoice sent', created, p.purple),
-      if (invoice.dueDate != null)
-        _Event('Payment due', invoice.dueDate!, p.warningText),
-      if (invoice.isPaid)
-        _Event('Payment received', invoice.dueDate ?? created, p.successText),
-    ]..sort((a, b) => b.date.compareTo(a.date));
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = AppColors.of(context);
+    final id = invoice.id ?? '';
+    final eventsAsync = ref.watch(invoiceEventsProvider(id));
+
+    // Build the event list: prefer the real log; fall back to synthesizing
+    // from dates when the log is empty (older invoices) or still loading.
+    List<_Event> events = eventsAsync.maybeWhen(
+      data: (log) => log
+          .map((e) => _Event(e.label, e.createdAt, _colorFor(e.type, p)))
+          .toList(),
+      orElse: () => [],
+    );
+
+    if (events.isEmpty) {
+      final created = invoice.issueDate;
+      events = <_Event>[
+        _Event('Invoice created', created, p.textTertiary),
+        _Event('Invoice sent', created, p.purple),
+        if (invoice.dueDate != null)
+          _Event('Payment due', invoice.dueDate!, p.warningText),
+        if (invoice.isPaid)
+          _Event('Payment received', invoice.dueDate ?? created, p.successText),
+      ]..sort((a, b) => b.date.compareTo(a.date));
+    }
 
     return DesktopPanel(
       child: Column(
@@ -317,7 +343,7 @@ class _ActivityCard extends StatelessWidget {
                           ).copyWith(fontSize: 13),
                         ),
                         Text(
-                          e.date.toIso8601String().split('T').first,
+                          _fmt(e.date),
                           style: AppTypography.numeric(p.textTertiary),
                         ),
                       ],
@@ -330,6 +356,13 @@ class _ActivityCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _fmt(DateTime d) {
+    final date = d.toIso8601String().split('T').first;
+    final hh = d.hour.toString().padLeft(2, '0');
+    final mm = d.minute.toString().padLeft(2, '0');
+    return '$date · $hh:$mm';
   }
 }
 

@@ -1,4 +1,4 @@
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 

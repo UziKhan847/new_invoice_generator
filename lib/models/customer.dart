@@ -6,6 +6,7 @@ class Customer {
   final String email;
   final String phone;
   final Address address;
+  final List<String> tags;
 
   Customer({
     required this.id,
@@ -13,6 +14,7 @@ class Customer {
     required this.email,
     required this.phone,
     this.address = const Address(),
+    this.tags = const [],
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,9 @@ class Customer {
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
       address: Address.fromRow(json),
+      tags:
+          (json['tags'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
     );
   }
 
@@ -31,12 +36,19 @@ class Customer {
       'name': name,
       'email': email,
       'phone': phone,
+      'tags': tags,
       ...address.toMap(),
     };
   }
 
   Map<String, dynamic> toUpdateMap() {
-    return {'name': name, 'email': email, 'phone': phone, ...address.toMap()};
+    return {
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'tags': tags,
+      ...address.toMap(),
+    };
   }
 
   Customer copyWith({
@@ -44,11 +56,13 @@ class Customer {
     String? email,
     String? phone,
     Address? address,
+    List<String>? tags,
   }) => Customer(
     id: id,
     name: name ?? this.name,
     email: email ?? this.email,
     phone: phone ?? this.phone,
     address: address ?? this.address,
+    tags: tags ?? this.tags,
   );
 }

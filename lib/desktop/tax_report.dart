@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
-import 'package:new_invoice_generator/screens/desktop/widgets.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/services/tax_report.dart';
 import 'package:new_invoice_generator/utils/loading_overlay.dart';
 

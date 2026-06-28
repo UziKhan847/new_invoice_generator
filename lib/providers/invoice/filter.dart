@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
-import 'package:new_invoice_generator/models/invoice_filter.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/filter.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 
 class InvoiceFilterNotifier extends Notifier<InvoiceFilter> {
   @override

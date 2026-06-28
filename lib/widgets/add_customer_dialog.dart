@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/address.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
-import 'package:new_invoice_generator/utils/validators.dart';
 import 'package:new_invoice_generator/screens/widgets/address_form.dart';
 import 'package:new_invoice_generator/screens/widgets/phone_field.dart';
+import 'package:new_invoice_generator/utils/validators.dart';
 
 /// Add or edit a customer. Pass [existing] to edit.
 /// Presented as a scrollable bottom sheet.
@@ -21,8 +21,10 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _email;
+  final TextEditingController _tagInput = TextEditingController();
   String _phone = '';
   late Address _address;
+  late List<String> _tags;
   bool _loading = false;
 
   @override
@@ -33,13 +35,24 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
     _email = TextEditingController(text: e?.email ?? '');
     _phone = e?.phone ?? '';
     _address = e?.address ?? const Address();
+    _tags = List<String>.from(e?.tags ?? const []);
   }
 
   @override
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _tagInput.dispose();
     super.dispose();
+  }
+
+  void _addTag(String raw) {
+    final t = raw.trim();
+    if (t.isEmpty) return;
+    if (!_tags.contains(t)) {
+      setState(() => _tags.add(t));
+    }
+    _tagInput.clear();
   }
 
   Future<void> _save() async {
@@ -55,6 +68,7 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
             email: _email.text.trim(),
             phone: _phone,
             address: _address,
+            tags: _tags,
           ),
         );
       } else {
@@ -64,6 +78,7 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
             email: _email.text.trim(),
             phone: _phone,
             address: _address,
+            tags: _tags,
           ),
         );
       }
@@ -134,6 +149,45 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
               ),
               const SizedBox(height: 10),
               AddressForm(initial: _address, onChanged: (a) => _address = a),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Tags',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_tags.isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _tags
+                      .map(
+                        (t) => Chip(
+                          label: Text(t),
+                          onDeleted: () => setState(() => _tags.remove(t)),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
+              ],
+              TextField(
+                controller: _tagInput,
+                decoration: InputDecoration(
+                  hintText: 'e.g. VIP, Net-30, B2B',
+                  prefixIcon: const Icon(Icons.label_outline),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _addTag(_tagInput.text),
+                  ),
+                ),
+                onSubmitted: _addTag,
+                textInputAction: TextInputAction.done,
+              ),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _loading ? null : _save,
@@ -167,109 +221,3 @@ Future<void> showAddCustomerSheet(BuildContext context, {Customer? existing}) {
     builder: (_) => AddCustomerSheet(existing: existing),
   );
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:new_invoice_generator/models/customer.dart';
-// import 'package:new_invoice_generator/providers/customer.dart';
-
-// class AddCustomerDialog extends ConsumerStatefulWidget {
-//   const AddCustomerDialog({super.key});
-
-//   @override
-//   ConsumerState<AddCustomerDialog> createState() => _AddCustomerDialogState();
-// }
-
-// class _AddCustomerDialogState extends ConsumerState<AddCustomerDialog> {
-//   final _name = TextEditingController();
-//   final _email = TextEditingController();
-//   final _phone = TextEditingController();
-//   final _address = TextEditingController();
-//   bool _loading = false;
-
-//   @override
-//   void dispose() {
-//     _name.dispose();
-//     _email.dispose();
-//     _phone.dispose();
-//     _address.dispose();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return AlertDialog(
-//       title: const Text('Add Customer'),
-//       content: SingleChildScrollView(
-//         child: Column(
-//           mainAxisSize: .min,
-//           children: [
-//             TextField(
-//               controller: _name,
-//               decoration: const InputDecoration(labelText: 'Name'),
-//             ),
-//             const SizedBox(height: 8),
-//             TextField(
-//               controller: _email,
-//               decoration: const InputDecoration(labelText: 'Email'),
-//               keyboardType: .emailAddress,
-//             ),
-//             const SizedBox(height: 8),
-//             TextField(
-//               controller: _phone,
-//               decoration: const InputDecoration(labelText: 'Phone'),
-//               keyboardType: .phone,
-//             ),
-//             const SizedBox(height: 8),
-//             TextField(
-//               controller: _address,
-//               decoration: const InputDecoration(labelText: 'Address'),
-//             ),
-//           ],
-//         ),
-//       ),
-//       actions: [
-//         TextButton(
-//           onPressed: () => Navigator.pop(context),
-//           child: const Text('Cancel'),
-//         ),
-//         ElevatedButton(
-//           onPressed: _loading
-//               ? null
-//               : () async {
-//                   if (_name.text.trim().isEmpty) return;
-//                   setState(() => _loading = true);
-//                   try {
-//                     await ref
-//                         .read(customerProvider.notifier)
-//                         .addCustomer(
-//                           Customer(
-//                             id: '',
-//                             name: _name.text.trim(),
-//                             email: _email.text.trim(),
-//                             address: _address.text.trim(),
-//                             phone: _phone.text.trim(),
-//                           ),
-//                         );
-//                     if (context.mounted) Navigator.pop(context);
-//                   } catch (e) {
-//                     if (!context.mounted) return;
-//                     ScaffoldMessenger.of(
-//                       context,
-//                     ).showSnackBar(SnackBar(content: Text('Error: $e')));
-//                   } finally {
-//                     if (mounted) setState(() => _loading = false);
-//                   }
-//                 },
-//           child: _loading
-//               ? const SizedBox(
-//                   height: 16,
-//                   width: 16,
-//                   child: CircularProgressIndicator(strokeWidth: 2),
-//                 )
-//               : const Text('Save'),
-//         ),
-//       ],
-//     );
-//   }
-// }

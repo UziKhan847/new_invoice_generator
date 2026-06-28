@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/customer.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
-import 'package:new_invoice_generator/screens/desktop/invoice/detail.dart';
-import 'package:new_invoice_generator/screens/desktop/invoice/document_view.dart';
-import 'package:new_invoice_generator/screens/desktop/widgets.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/desktop/invoice/detail.dart';
+import 'package:new_invoice_generator/desktop/invoice/document_view.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 

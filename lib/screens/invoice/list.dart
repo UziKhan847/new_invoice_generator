@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:new_invoice_generator/models/invoice_filter.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
-import 'package:new_invoice_generator/providers/invoice_filter.dart';
+import 'package:new_invoice_generator/models/invoice/filter.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/filter.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/filter_sheet.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/tile.dart';

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/providers/company.dart';
-import 'package:new_invoice_generator/providers/employee.dart';
 import 'package:new_invoice_generator/providers/layout_mode.dart';
-import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/company_profile.dart';
-import 'package:new_invoice_generator/screens/desktop/widgets.dart';
 import 'package:new_invoice_generator/screens/employees.dart';
 import 'package:new_invoice_generator/screens/expense.dart';
 import 'package:new_invoice_generator/screens/recurring_invoices.dart';
@@ -357,20 +355,32 @@ class _AppearanceSection extends ConsumerWidget {
         Text('LAYOUT', style: AppTypography.label(p.textTertiary)),
         const SizedBox(height: 10),
         DesktopPanel(
-          child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: layout.isDesktop,
-            onChanged: (v) => ref
-                .read(layoutModeProvider.notifier)
-                .set(v ? LayoutMode.desktop : LayoutMode.mobile),
-            title: Text(
-              'Desktop layout',
-              style: AppTypography.title(p.ink).copyWith(fontSize: 15),
-            ),
-            subtitle: Text(
-              'Sidebar + tables. Turn off to use the compact mobile layout.',
-              style: AppTypography.bodyMuted(p.textSecondary),
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Desktop layout',
+                      style: AppTypography.title(p.ink).copyWith(fontSize: 15),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Sidebar + tables. Turn off to use the compact mobile layout.',
+                      style: AppTypography.bodyMuted(p.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Switch(
+                value: layout.isDesktop,
+                onChanged: (v) => ref
+                    .read(layoutModeProvider.notifier)
+                    .set(v ? LayoutMode.desktop : LayoutMode.mobile),
+              ),
+            ],
           ),
         ),
       ],

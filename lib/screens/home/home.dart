@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/home_analytics.dart';
 import 'package:new_invoice_generator/models/monthly_bar.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/home/widgets/count_line_chart.dart';
 import 'package:new_invoice_generator/screens/home/widgets/invoice_tile.dart';

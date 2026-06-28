@@ -1,5 +1,5 @@
 import 'package:new_invoice_generator/models/address.dart';
-import 'invoice_item.dart';
+import 'item.dart';
 
 class Invoice {
   final String? id;

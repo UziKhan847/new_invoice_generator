@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/screens/invoice/detail.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/status_badge.dart';
 

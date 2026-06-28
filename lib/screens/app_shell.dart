@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/screens/customers.dart';
 import 'package:new_invoice_generator/screens/dashboard.dart';
-import 'package:new_invoice_generator/screens/desktop/shell.dart';
+import 'package:new_invoice_generator/desktop/shell.dart';
 import 'package:new_invoice_generator/screens/home/home.dart';
 import 'package:new_invoice_generator/screens/invoice/list.dart';
 import 'package:new_invoice_generator/screens/more/more.dart';

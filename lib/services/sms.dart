@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SmsService {

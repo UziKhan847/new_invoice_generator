@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/customer.dart';
-import 'package:new_invoice_generator/models/invoice.dart';
+import 'package:new_invoice_generator/models/invoice/invoice.dart';
 
 /// On-screen rendering of an invoice document, mirroring the PDF layout.
 /// Shared by the desktop Invoices preview pane and the invoice detail viewer.

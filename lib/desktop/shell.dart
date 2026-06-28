@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/providers/company.dart';
-import 'package:new_invoice_generator/providers/invoice.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/screens/charts/screen.dart';
-import 'package:new_invoice_generator/screens/desktop/customers.dart';
-import 'package:new_invoice_generator/screens/desktop/dashboard.dart';
-import 'package:new_invoice_generator/screens/desktop/invoice/invoices.dart';
-import 'package:new_invoice_generator/screens/desktop/overview.dart';
-import 'package:new_invoice_generator/screens/desktop/settings.dart';
-import 'package:new_invoice_generator/screens/desktop/tax_report.dart';
+import 'package:new_invoice_generator/desktop/customers.dart';
+import 'package:new_invoice_generator/desktop/dashboard.dart';
+import 'package:new_invoice_generator/desktop/invoice/invoices.dart';
+import 'package:new_invoice_generator/desktop/overview.dart';
+import 'package:new_invoice_generator/desktop/settings.dart';
+import 'package:new_invoice_generator/desktop/tax_report.dart';
 
 /// Which top-level desktop section is showing.
 class DesktopNavNotifier extends Notifier<int> {

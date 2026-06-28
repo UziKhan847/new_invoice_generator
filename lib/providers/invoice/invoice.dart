@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/repositories/invoice.dart';
 import 'package:new_invoice_generator/services/invoice_number.dart';
-import '../models/invoice.dart';
+import '../../models/invoice/invoice.dart';
 
 class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
   final repo = InvoiceRepository();
