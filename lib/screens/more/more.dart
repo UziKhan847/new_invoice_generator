@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/main.dart';
+import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/company_profile.dart';
 import 'package:new_invoice_generator/screens/employees.dart';
@@ -94,8 +95,51 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── Business ─────────────────────────────────────────────
-          const MoreSectionHeader(title: 'Business'),
+          // ── Layout ───────────────────────────────────────────────
+          const MoreSectionHeader(title: 'Layout'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+              child: Builder(
+                builder: (context) {
+                  final mode = ref.watch(layoutModeProvider);
+                  final desktop = mode.isDesktop;
+                  return SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: desktop,
+                    onChanged: (v) => ref
+                        .read(layoutModeProvider.notifier)
+                        .set(v ? LayoutMode.desktop : LayoutMode.mobile),
+                    secondary: Icon(
+                      desktop
+                          ? Icons.desktop_windows_outlined
+                          : Icons.phone_iphone_outlined,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    title: const Text(
+                      'Desktop layout',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isDesktopPlatform
+                          ? 'Sidebar + tables. Turn off to preview the mobile layout.'
+                          : 'Sidebar + tables — handy on tablets and larger screens.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(140),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Card(
             child: Column(
               children: [

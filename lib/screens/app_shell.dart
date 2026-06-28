@@ -1,18 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/screens/customers.dart';
 import 'package:new_invoice_generator/screens/dashboard.dart';
+import 'package:new_invoice_generator/screens/desktop/shell.dart';
 import 'package:new_invoice_generator/screens/home/home.dart';
 import 'package:new_invoice_generator/screens/invoice/list.dart';
 import 'package:new_invoice_generator/screens/more/more.dart';
 
-class AppShell extends StatefulWidget {
+/// Top-level shell: renders the desktop sidebar layout or the mobile
+/// bottom-nav layout based on [layoutModeProvider].
+class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(layoutModeProvider);
+    return mode.isDesktop ? const DesktopShell() : const MobileShell();
+  }
 }
 
-class _AppShellState extends State<AppShell> {
+class MobileShell extends StatefulWidget {
+  const MobileShell({super.key});
+
+  @override
+  State<MobileShell> createState() => _MobileShellState();
+}
+
+class _MobileShellState extends State<MobileShell> {
   int _selected = 0;
 
   static const List<Widget> _pages = [
