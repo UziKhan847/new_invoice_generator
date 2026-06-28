@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +19,18 @@ extension LayoutModeX on LayoutMode {
 bool get isDesktopPlatform {
   if (kIsWeb) return false;
   return Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+}
+
+/// Whether this device is large enough to use the desktop layout.
+/// Desktop OSes always qualify. On mobile (Android/iOS) only tablets do —
+/// a tablet is detected by its shortest side being >= 600dp, the standard
+/// Material breakpoint. Phones are excluded because the desktop sidebar layout
+/// is unusable in portrait and can trap the user with no way back.
+bool deviceAllowsDesktop(BuildContext context) {
+  if (isDesktopPlatform) return true;
+  final size = MediaQuery.sizeOf(context);
+  final shortestSide = size.shortestSide;
+  return shortestSide >= 600;
 }
 
 class LayoutModeNotifier extends Notifier<LayoutMode> {
@@ -60,6 +73,5 @@ class LayoutModeNotifier extends Notifier<LayoutMode> {
   }
 }
 
-final layoutModeProvider = NotifierProvider<LayoutModeNotifier, LayoutMode>(
-  LayoutModeNotifier.new,
-);
+final layoutModeProvider =
+    NotifierProvider<LayoutModeNotifier, LayoutMode>(LayoutModeNotifier.new);

@@ -1,0 +1,9 @@
+display_name: Markaz Umaza
+icon: assets/icon.png        # a PNG you provide (256x256 works well)
+keywords:
+  - Invoice
+  - Billing
+generic_name: Invoicing
+categories:
+  - Office
+  - Finance

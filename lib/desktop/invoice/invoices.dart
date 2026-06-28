@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/invoice/detail.dart';
+import 'package:new_invoice_generator/desktop/invoice/document_view.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
-import 'package:new_invoice_generator/desktop/invoice/detail.dart';
-import 'package:new_invoice_generator/desktop/invoice/document_view.dart';
-import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 
@@ -49,11 +49,13 @@ class _DesktopInvoicesState extends ConsumerState<DesktopInvoices> {
           loading: () => const DesktopTopBar(title: 'Invoices'),
           error: (_, _) => const DesktopTopBar(title: 'Invoices'),
           data: (all) {
-            final visible = all.where((i) => !i.isPrivate).toList();
-            final awaiting = visible.where((i) => !i.isPaid).length;
+            // Private invoices ARE shown in the list (with a lock badge) so they
+            // can be managed across devices. They're only excluded from official
+            // figures (analytics, totals, tax report) — handled in those screens.
+            final awaiting = all.where((i) => !i.isPaid).length;
             return DesktopTopBar(
               title: 'Invoices',
-              subtitle: '${visible.length} total · $awaiting awaiting payment',
+              subtitle: '${all.length} total · $awaiting awaiting payment',
               actions: [
                 DesktopPrimaryButton(
                   icon: Icons.add,
@@ -74,7 +76,9 @@ class _DesktopInvoicesState extends ConsumerState<DesktopInvoices> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (all) {
-              final visible = all.where((i) => !i.isPrivate).toList()
+              // Show all invoices including private (lock-badged); private are
+              // only excluded from official figures elsewhere.
+              final visible = [...all]
                 ..sort((a, b) => b.issueDate.compareTo(a.issueDate));
               final filtered = switch (_filter) {
                 InvoiceFilter.all => visible,
@@ -369,6 +373,13 @@ class _PreviewPane extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
+            _OutlineBtn(
+              icon: Icons.delete_outline,
+              label: 'Delete',
+              danger: true,
+              onTap: () => _confirmDelete(context, ref, invoice),
+            ),
+            const SizedBox(width: 8),
             FilledButton.icon(
               onPressed: () => Navigator.push(
                 context,
@@ -411,24 +422,55 @@ class _PreviewPane extends ConsumerWidget {
     }
     return null;
   }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref, Invoice inv) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete invoice?'),
+        content: Text('${inv.invoiceNumber} will be permanently removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && inv.id != null) {
+      // Clear selection so the preview doesn't point at a deleted invoice.
+      ref.read(selectedInvoiceProvider.notifier).select(null);
+      await ref.read(invoiceProvider.notifier).deleteInvoice(inv.id!);
+    }
+  }
 }
 
 class _OutlineBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool danger;
   const _OutlineBtn({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.danger = false,
   });
   @override
   Widget build(BuildContext context) {
+    final p = AppColors.of(context);
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 16),
       label: Text(label),
       style: OutlinedButton.styleFrom(
+        foregroundColor: danger ? p.dangerText : p.ink,
+        side: BorderSide(color: danger ? p.dangerBorder : p.border, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       ),
     );

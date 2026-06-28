@@ -10,8 +10,8 @@ import 'package:new_invoice_generator/screens/guide.dart';
 import 'package:new_invoice_generator/screens/more/widgets/company_logo_card.dart';
 import 'package:new_invoice_generator/screens/more/widgets/more_nav_tile.dart';
 import 'package:new_invoice_generator/screens/recurring_invoices.dart';
-import 'package:new_invoice_generator/screens/services.dart';
 import 'package:new_invoice_generator/screens/tax_report.dart';
+import 'package:new_invoice_generator/screens/services.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -104,27 +104,50 @@ class MoreScreen extends ConsumerWidget {
                 builder: (context) {
                   final mode = ref.watch(layoutModeProvider);
                   final desktop = mode.isDesktop;
+                  final allowed = deviceAllowsDesktop(context);
                   return SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    value: desktop,
-                    onChanged: (v) => ref
-                        .read(layoutModeProvider.notifier)
-                        .set(v ? LayoutMode.desktop : LayoutMode.mobile),
+                    value: desktop && allowed,
+                    // On phones the desktop layout is disabled entirely.
+                    onChanged: !allowed
+                        ? null
+                        : (v) async {
+                            if (v) {
+                              final ok = await _confirmDesktop(context);
+                              if (ok != true) return;
+                            }
+                            await ref
+                                .read(layoutModeProvider.notifier)
+                                .set(
+                                  v ? LayoutMode.desktop : LayoutMode.mobile,
+                                );
+                          },
                     secondary: Icon(
                       desktop
                           ? Icons.desktop_windows_outlined
                           : Icons.phone_iphone_outlined,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: allowed
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(90),
                     ),
-                    title: const Text(
+                    title: Text(
                       'Desktop layout',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
+                        color: allowed
+                            ? null
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withAlpha(120),
                       ),
                     ),
                     subtitle: Text(
-                      isDesktopPlatform
+                      !allowed
+                          ? 'Available on tablets and larger screens only.'
+                          : isDesktopPlatform
                           ? 'Sidebar + tables. Turn off to preview the mobile layout.'
                           : 'Sidebar + tables — handy on tablets and larger screens.',
                       style: TextStyle(
@@ -236,4 +259,30 @@ class MoreScreen extends ConsumerWidget {
       await supabase.auth.signOut();
     }
   }
+}
+
+/// Confirmation shown before switching a tablet into the desktop layout.
+Future<bool?> _confirmDesktop(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      icon: const Icon(Icons.desktop_windows_outlined),
+      title: const Text('Switch to desktop layout?'),
+      content: const Text(
+        'The desktop layout uses a sidebar and wide tables. It works best on '
+        'a larger screen in landscape. You can switch back any time from '
+        'Settings → Appearance.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Use desktop layout'),
+        ),
+      ],
+    ),
+  );
 }

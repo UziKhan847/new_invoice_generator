@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/desktop/shell.dart';
 import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/screens/customers.dart';
 import 'package:new_invoice_generator/screens/dashboard.dart';
-import 'package:new_invoice_generator/desktop/shell.dart';
 import 'package:new_invoice_generator/screens/home/home.dart';
 import 'package:new_invoice_generator/screens/invoice/list.dart';
 import 'package:new_invoice_generator/screens/more/more.dart';
@@ -16,7 +16,12 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(layoutModeProvider);
-    return mode.isDesktop ? const DesktopShell() : const MobileShell();
+    // Safety net: never render the desktop layout on a device too small for it
+    // (a phone), even if a desktop override is stored — otherwise the user can
+    // get trapped in an unusable portrait sidebar with no way to revert.
+    final allowed = deviceAllowsDesktop(context);
+    final useDesktop = mode.isDesktop && allowed;
+    return useDesktop ? const DesktopShell() : const MobileShell();
   }
 }
 
