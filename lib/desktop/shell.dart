@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
-import 'package:new_invoice_generator/providers/company.dart';
-import 'package:new_invoice_generator/providers/invoice/invoice.dart';
-import 'package:new_invoice_generator/screens/charts/screen.dart';
+import 'package:new_invoice_generator/desktop/charts.dart';
 import 'package:new_invoice_generator/desktop/customers.dart';
 import 'package:new_invoice_generator/desktop/dashboard.dart';
+import 'package:new_invoice_generator/desktop/guide.dart';
 import 'package:new_invoice_generator/desktop/invoice/invoices.dart';
 import 'package:new_invoice_generator/desktop/overview.dart';
 import 'package:new_invoice_generator/desktop/settings.dart';
 import 'package:new_invoice_generator/desktop/tax_report.dart';
+import 'package:new_invoice_generator/main.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 
 /// Which top-level desktop section is showing.
 class DesktopNavNotifier extends Notifier<int> {
@@ -19,9 +21,8 @@ class DesktopNavNotifier extends Notifier<int> {
   void select(int index) => state = index;
 }
 
-final desktopNavProvider = NotifierProvider<DesktopNavNotifier, int>(
-  DesktopNavNotifier.new,
-);
+final desktopNavProvider =
+    NotifierProvider<DesktopNavNotifier, int>(DesktopNavNotifier.new);
 
 class DesktopShell extends ConsumerWidget {
   const DesktopShell({super.key});
@@ -33,11 +34,8 @@ class DesktopShell extends ConsumerWidget {
     _NavItem('Customers', Icons.people_outline, Icons.people),
     _NavItem('Dashboard', Icons.dashboard_outlined, Icons.dashboard),
     _NavItem('Charts', Icons.bar_chart_outlined, Icons.bar_chart),
-    _NavItem(
-      'Tax Report',
-      Icons.account_balance_outlined,
-      Icons.account_balance,
-    ),
+    _NavItem('Tax Report', Icons.account_balance_outlined,
+        Icons.account_balance),
   ];
 
   static const _pages = [
@@ -45,7 +43,7 @@ class DesktopShell extends ConsumerWidget {
     DesktopInvoices(),
     DesktopCustomers(),
     DesktopDashboard(),
-    ChartsScreen(),
+    DesktopCharts(),
     DesktopTaxReport(),
   ];
 
@@ -120,32 +118,23 @@ class _Sidebar extends ConsumerWidget {
                     color: p.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(
-                    initials,
-                    style: AppTypography.title(
-                      Colors.white,
-                    ).copyWith(fontSize: 14),
-                  ),
+                  child: Text(initials,
+                      style: AppTypography.title(Colors.white)
+                          .copyWith(fontSize: 14)),
                 ),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        companyName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.title(
-                          p.ink,
-                        ).copyWith(fontSize: 14),
-                      ),
-                      Text(
-                        'Invoicing workspace',
-                        style: AppTypography.caption(
-                          p.textTertiary,
-                        ).copyWith(fontSize: 11),
-                      ),
+                      Text(companyName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              AppTypography.title(p.ink).copyWith(fontSize: 14)),
+                      Text('Invoicing workspace',
+                          style: AppTypography.caption(p.textTertiary)
+                              .copyWith(fontSize: 11)),
                     ],
                   ),
                 ),
@@ -155,10 +144,8 @@ class _Sidebar extends ConsumerWidget {
 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              'WORKSPACE',
-              style: AppTypography.label(p.textTertiary),
-            ),
+            child: Text('WORKSPACE',
+                style: AppTypography.label(p.textTertiary)),
           ),
 
           // Nav items
@@ -170,65 +157,90 @@ class _Sidebar extends ConsumerWidget {
               item: s,
               active: active,
               badge: badge,
-              onTap: () => ref.read(desktopNavProvider.notifier).select(i),
+              onTap: () =>
+                  ref.read(desktopNavProvider.notifier).select(i),
             );
           }),
 
           const Spacer(),
           Divider(height: 1, color: p.border),
 
+          // Help / How to use
+          _SidebarTile(
+            item: const _NavItem(
+                'How to Use', Icons.help_outline, Icons.help),
+            active: false,
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const DesktopGuide())),
+          ),
+
           // Settings
           _SidebarTile(
             item: const _NavItem(
-              'Settings',
-              Icons.settings_outlined,
-              Icons.settings,
-            ),
+                'Settings', Icons.settings_outlined, Icons.settings),
             active: false,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DesktopSettings()),
-            ),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const DesktopSettings())),
           ),
 
-          // User chip
+          // User chip → menu with logout
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: p.primaryTint,
-                  child: Text(
-                    initials.isNotEmpty ? initials[0] : '?',
-                    style: AppTypography.title(
-                      p.primary,
-                    ).copyWith(fontSize: 13),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+            child: PopupMenuButton<String>(
+              tooltip: 'Account',
+              position: PopupMenuPosition.under,
+              onSelected: (v) {
+                if (v == 'logout') _confirmLogout(context);
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
                     children: [
-                      Text(
-                        (company['email'] as String?)?.split('@').first ??
-                            'You',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.body(p.ink).copyWith(fontSize: 13),
-                      ),
-                      Text(
-                        'Workspace owner',
-                        style: AppTypography.caption(
-                          p.textTertiary,
-                        ).copyWith(fontSize: 11),
-                      ),
+                      Icon(Icons.logout, size: 18, color: p.dangerText),
+                      const SizedBox(width: 10),
+                      const Text('Log out'),
                     ],
                   ),
                 ),
-                Icon(Icons.unfold_more, size: 16, color: p.textTertiary),
               ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: p.primaryTint,
+                      child: Text(
+                        initials.isNotEmpty ? initials[0] : '?',
+                        style:
+                            AppTypography.title(p.primary).copyWith(fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              (company['email'] as String?)
+                                      ?.split('@')
+                                      .first ??
+                                  'You',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.body(p.ink)
+                                  .copyWith(fontSize: 13)),
+                          Text('Workspace owner',
+                              style: AppTypography.caption(p.textTertiary)
+                                  .copyWith(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.unfold_more, size: 16, color: p.textTertiary),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -236,12 +248,33 @@ class _Sidebar extends ConsumerWidget {
     );
   }
 
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('You will be returned to the login screen.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                const Text('Log out', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await supabase.auth.signOut();
+    }
+  }
+
   static String _initials(String name) {
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final parts =
+        name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
       return parts.first.substring(0, 1).toUpperCase();
@@ -277,36 +310,26 @@ class _SidebarTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             child: Row(
               children: [
-                Icon(
-                  active ? item.activeIcon : item.icon,
-                  size: 20,
-                  color: active ? p.primary : p.textSecondary,
-                ),
+                Icon(active ? item.activeIcon : item.icon,
+                    size: 20, color: active ? p.primary : p.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    item.label,
-                    style: active
-                        ? AppTypography.title(p.primary).copyWith(fontSize: 14)
-                        : AppTypography.body(p.textSecondary),
-                  ),
+                  child: Text(item.label,
+                      style: active
+                          ? AppTypography.title(p.primary).copyWith(fontSize: 14)
+                          : AppTypography.body(p.textSecondary)),
                 ),
                 if (badge != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
+                        horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: p.warningBg,
                       borderRadius: BorderRadius.circular(AppRadii.pill),
                     ),
-                    child: Text(
-                      '$badge',
-                      style: AppTypography.caption(
-                        p.warningText,
-                      ).copyWith(fontSize: 11),
-                    ),
+                    child: Text('$badge',
+                        style: AppTypography.caption(p.warningText)
+                            .copyWith(fontSize: 11)),
                   ),
               ],
             ),

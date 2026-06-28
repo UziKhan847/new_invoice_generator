@@ -6,8 +6,8 @@ import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/home_analytics.dart';
-import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/invoice/filter.dart';
+import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/recurring_invoice.dart';
 import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/app_shell.dart';
@@ -82,19 +82,23 @@ class _AuthGateState extends ConsumerState<AuthGate>
     return StreamBuilder<AuthState>(
       stream: _authStream,
       builder: (context, snapshot) {
-        final session = snapshot.data?.session ?? supabase.auth.currentSession;
+        final session =
+            snapshot.data?.session ?? supabase.auth.currentSession;
         final userId = session?.user.id;
 
         if (userId != _lastUserId) {
           _lastUserId = userId;
-          _invalidateAll();
+          // Invalidating providers triggers rebuilds, so it must not run during
+          // this build. Defer it to after the current frame.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _invalidateAll();
+          });
         }
 
         if (snapshot.connectionState == ConnectionState.waiting &&
             session == null) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+              body: Center(child: CircularProgressIndicator()));
         }
 
         if (session == null) return const LoginScreen();
@@ -102,8 +106,8 @@ class _AuthGateState extends ConsumerState<AuthGate>
         // Check onboarding status from company record
         final companyAsync = ref.watch(companyProvider);
         return companyAsync.when(
-          loading: () =>
-              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          loading: () => const Scaffold(
+              body: Center(child: CircularProgressIndicator())),
           error: (_, _) => AppShell(key: ValueKey(userId)),
           data: (company) {
             final onboarded = company['onboarded'] as bool? ?? false;
