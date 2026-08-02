@@ -26,4 +26,5 @@ class InvoiceEventsNotifier extends AsyncNotifier<List<InvoiceEvent>> {
 final invoiceEventsProvider = AsyncNotifierProvider.family<
     InvoiceEventsNotifier, List<InvoiceEvent>, String>(
   InvoiceEventsNotifier.new,
+  isAutoDispose: true,
 );

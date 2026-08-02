@@ -1,10 +1,12 @@
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
+import 'package:new_invoice_generator/services/pdf_fonts.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class ReceiptPdfService {
   static Future<void> generateReceipt(Invoice invoice) async {
-    final pdf = pw.Document();
+    await PdfFonts.ensureLoaded();
+    final pdf = pw.Document(theme: PdfFonts.theme);
     final datePaid = DateTime.now();
     final formattedDate =
         '${datePaid.year}-${datePaid.month.toString().padLeft(2, '0')}-${datePaid.day.toString().padLeft(2, '0')}';

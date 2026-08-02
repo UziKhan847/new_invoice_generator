@@ -67,10 +67,10 @@ class _DesktopCustomersState extends ConsumerState<DesktopCustomers> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (all) {
+              final q = _query.toLowerCase();
               final customers = _query.isEmpty
                   ? all
                   : all.where((c) {
-                      final q = _query.toLowerCase();
                       return c.name.toLowerCase().contains(q) ||
                           c.email.toLowerCase().contains(q);
                     }).toList();

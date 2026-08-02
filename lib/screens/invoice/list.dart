@@ -56,9 +56,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
     if (confirm != true) return;
 
     final notifier = ref.read(invoiceProvider.notifier);
-    for (final id in _selected.toList()) {
-      await notifier.deleteInvoice(id);
-    }
+    await notifier.deleteMany(_selected.toList());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${_selected.length} invoice(s) deleted')),
@@ -96,9 +94,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
     if (confirm != true) return;
 
     final notifier = ref.read(invoiceProvider.notifier);
-    for (final id in unpaidIds) {
-      await notifier.markPaid(id);
-    }
+    await notifier.markManyPaid(unpaidIds);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -179,6 +175,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
       floatingActionButton: _isSelecting
           ? null
           : FloatingActionButton(
+              heroTag: 'invoice_list_fab',
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),

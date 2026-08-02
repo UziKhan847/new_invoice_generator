@@ -126,6 +126,7 @@ class ServicesScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'services_fab',
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const _ServiceDialog(),

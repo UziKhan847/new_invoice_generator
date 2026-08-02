@@ -55,6 +55,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'recurring_invoices_fab',
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const _AddRecurringDialog(),

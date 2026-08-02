@@ -39,8 +39,22 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     await future;
   }
 
+  Future<void> markManyPaid(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await repo.markManyPaid(ids);
+    ref.invalidateSelf();
+    await future;
+  }
+
   Future<void> deleteInvoice(String id) async {
     await repo.deleteInvoice(id);
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> deleteMany(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await repo.deleteMany(ids);
     ref.invalidateSelf();
     await future;
   }

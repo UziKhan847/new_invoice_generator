@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
+import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 
 /// On-screen rendering of an invoice document, mirroring the PDF layout.
 /// Shared by the desktop Invoices preview pane and the invoice detail viewer.
@@ -123,7 +124,17 @@ class InvoiceDocumentView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _StatusPill(isPaid: invoice.isPaid),
+                    AppPill(
+                      label: invoice.isPaid ? 'Paid' : 'Unpaid',
+                      bg: invoice.isPaid ? p.successBg : p.warningBg,
+                      text: invoice.isPaid ? p.successText : p.warningText,
+                      dot: Icons.circle,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
+                      fontSize: 12,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 22),
@@ -314,35 +325,6 @@ class InvoiceDocumentView extends StatelessWidget {
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts.first[0] + parts[1][0]).toUpperCase();
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  final bool isPaid;
-  const _StatusPill({required this.isPaid});
-  @override
-  Widget build(BuildContext context) {
-    final p = AppColors.of(context);
-    final bg = isPaid ? p.successBg : p.warningBg;
-    final fg = isPaid ? p.successText : p.warningText;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.circle, size: 7, color: fg),
-          const SizedBox(width: 6),
-          Text(
-            isPaid ? 'Paid' : 'Unpaid',
-            style: AppTypography.caption(fg).copyWith(fontSize: 12),
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -81,10 +81,10 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (allCustomers) {
+          final q = _query.toLowerCase();
           final customers = _query.isEmpty
               ? allCustomers
               : allCustomers.where((c) {
-                  final q = _query.toLowerCase();
                   return c.name.toLowerCase().contains(q) ||
                       c.email.toLowerCase().contains(q);
                 }).toList();
@@ -154,6 +154,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
       floatingActionButton: _selecting
           ? null
           : FloatingActionButton(
+              heroTag: 'customers_fab',
               onPressed: () => showAddCustomerSheet(context),
               backgroundColor: p.primary,
               foregroundColor: Colors.white,

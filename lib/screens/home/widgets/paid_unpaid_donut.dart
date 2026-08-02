@@ -123,7 +123,14 @@ class _LegendCard extends StatelessWidget {
                 decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
-              Text(label, style: AppTypography.caption(text)),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: AppTypography.caption(text),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),

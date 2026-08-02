@@ -183,6 +183,7 @@ class EmployeesScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'employees_fab',
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const _EmployeeDialog(),

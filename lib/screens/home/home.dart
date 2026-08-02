@@ -118,33 +118,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             setState(() => _selectedBar = i),
                                       )
                                     : _chartIndex == 1
-                                    ? Builder(
-                                        builder: (ctx) {
-                                          final invs =
-                                              (ref
-                                                          .watch(
-                                                            invoiceProvider,
-                                                          )
-                                                          .asData
-                                                          ?.value ??
-                                                      [])
-                                                  .where((i) => !i.isPrivate)
-                                                  .toList();
-                                          final pd = invs.fold(
-                                            0.0,
-                                            (s, i) =>
-                                                s + (i.isPaid ? i.total : 0.0),
-                                          );
-                                          final u = invs.fold(
-                                            0.0,
-                                            (s, i) =>
-                                                s + (i.isPaid ? 0.0 : i.total),
-                                          );
-                                          return PaidUnpaidDonut(
-                                            paid: pd,
-                                            unpaid: u,
-                                          );
-                                        },
+                                    ? PaidUnpaidDonut(
+                                        paid: analytics.totalRevenue,
+                                        unpaid: analytics.unpaid,
                                       )
                                     : CountLineChart(
                                         bars: analytics.invoiceCountBars,
@@ -236,6 +212,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'home_fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),

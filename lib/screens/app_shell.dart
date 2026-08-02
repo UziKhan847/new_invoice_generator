@@ -46,7 +46,7 @@ class _MobileShellState extends State<MobileShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selected],
+      body: IndexedStack(index: _selected, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selected,
         onDestinationSelected: (i) => setState(() => _selected = i),

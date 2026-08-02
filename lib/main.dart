@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/auth_gate.dart';
 import 'package:new_invoice_generator/keys.dart';
+import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/services/notification.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -36,13 +37,15 @@ void callbackDispatcher() {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: url, // e.g. https://abcdefgh.supabase.co
-    publishableKey: anonKey,
-  );
+  await Supabase.initialize(url: url, publishableKey: anonKey);
 
   // Init notifications
   await NotificationService.init();
+
+  // Resolve the persisted layout mode before the first frame so the app
+  // never flashes the platform-default layout before switching to the
+  // user's saved override (e.g. "mobile" saved on a desktop OS).
+  final initialLayoutMode = await loadInitialLayoutMode();
 
   // Workmanager is Android/iOS only — not available on Linux/desktop
   if (Platform.isAndroid || Platform.isIOS) {
@@ -56,7 +59,16 @@ Future<void> main() async {
     );
   }
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        layoutModeProvider.overrideWith(
+          () => LayoutModeNotifier(initialLayoutMode),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {

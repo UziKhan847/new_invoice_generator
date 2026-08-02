@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/models/expense.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
+import 'package:new_invoice_generator/services/pdf_fonts.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -48,7 +49,8 @@ class TaxReportService {
     required int year,
     required Map<String, dynamic> company,
   }) async {
-    final pdf = pw.Document();
+    await PdfFonts.ensureLoaded();
+    final pdf = pw.Document(theme: PdfFonts.theme);
     const monthNames = [
       'Jan',
       'Feb',

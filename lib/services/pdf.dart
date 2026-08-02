@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:new_invoice_generator/models/address.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
+import 'package:new_invoice_generator/services/pdf_fonts.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -24,7 +25,8 @@ class PdfService {
     Map<String, dynamic>? company,
     Customer? customer,
   }) async {
-    final pdf = pw.Document();
+    await PdfFonts.ensureLoaded();
+    final pdf = pw.Document(theme: PdfFonts.theme);
 
     // Resolve effective business info: prefer the invoice snapshot, fall back
     // to the live company record so the PDF is never missing the header.

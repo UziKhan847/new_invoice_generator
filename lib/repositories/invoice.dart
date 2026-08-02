@@ -52,7 +52,18 @@ class InvoiceRepository {
         .eq('id', invoiceId);
   }
 
+  Future<void> markManyPaid(List<String> invoiceIds) async {
+    await supabase
+        .from('invoices')
+        .update({'is_paid': true, 'status': 'paid'})
+        .inFilter('id', invoiceIds);
+  }
+
   Future<void> deleteInvoice(String invoiceId) async {
     await supabase.from('invoices').delete().eq('id', invoiceId);
+  }
+
+  Future<void> deleteMany(List<String> invoiceIds) async {
+    await supabase.from('invoices').delete().inFilter('id', invoiceIds);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'dart:io';
@@ -199,7 +200,24 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _StatusBadge(isPaid: invoice.isPaid),
+                          AppPill(
+                            label: invoice.isPaid ? 'Paid' : 'Unpaid',
+                            bg: invoice.isPaid
+                                ? AppColors.of(context).successBg
+                                : AppColors.of(context).warningBg,
+                            border: invoice.isPaid
+                                ? AppColors.of(context).successBorder
+                                : AppColors.of(context).warningBorder,
+                            text: invoice.isPaid
+                                ? AppColors.of(context).successText
+                                : AppColors.of(context).warningText,
+                            dot: Icons.circle,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 11,
+                              vertical: 5,
+                            ),
+                            fontSize: 12,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -567,36 +585,6 @@ class InvoiceDetailScreen extends ConsumerWidget {
     );
   }
 
-}
-
-class _StatusBadge extends StatelessWidget {
-  final bool isPaid;
-  const _StatusBadge({required this.isPaid});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = AppColors.of(context);
-    final bg = isPaid ? p.successBg : p.warningBg;
-    final border = isPaid ? p.successBorder : p.warningBorder;
-    final text = isPaid ? p.successText : p.warningText;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.circle, size: 7, color: text),
-          const SizedBox(width: 5),
-          Text(isPaid ? 'Paid' : 'Unpaid',
-              style: AppTypography.caption(text).copyWith(fontSize: 12)),
-        ],
-      ),
-    );
-  }
 }
 
 class _TotalRow extends StatelessWidget {

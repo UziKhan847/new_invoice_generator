@@ -29,16 +29,30 @@ class DesktopTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                     style: AppTypography.display(p.ink).copyWith(fontSize: 24)),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
                   Text(subtitle!,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                       style: AppTypography.bodyMuted(p.textSecondary)),
                 ],
               ],
             ),
           ),
-          ...actions,
+          if (actions.isNotEmpty) ...[
+            const SizedBox(width: 14),
+            Flexible(
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                runSpacing: 8,
+                children: actions,
+              ),
+            ),
+          ],
         ],
       ),
     );

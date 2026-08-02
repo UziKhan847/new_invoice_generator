@@ -69,18 +69,23 @@ class AppIconTile extends StatelessWidget {
   }
 }
 
-/// A status pill (Paid / Unpaid / etc.) with bg + border + text colors.
+/// A status pill (Paid / Unpaid / etc.) with bg + optional border + text colors.
 class AppPill extends StatelessWidget {
   final String label;
-  final Color bg, border, text;
+  final Color bg, text;
+  final Color? border; // null = no border
   final IconData? dot; // if set, draws a leading dot/icon
+  final EdgeInsetsGeometry padding;
+  final double fontSize;
   const AppPill({
     super.key,
     required this.label,
     required this.bg,
-    required this.border,
     required this.text,
+    this.border,
     this.dot,
+    this.padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    this.fontSize = 11.5,
   });
 
   factory AppPill.paid(BuildContext context) {
@@ -106,11 +111,11 @@ class AppPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: padding,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        border: Border.all(color: border),
+        border: border == null ? null : Border.all(color: border!),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -119,9 +124,13 @@ class AppPill extends StatelessWidget {
             Icon(dot, size: 7, color: text),
             const SizedBox(width: 5),
           ],
-          Text(
-            label,
-            style: AppTypography.caption(text).copyWith(fontSize: 11.5),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: AppTypography.caption(text).copyWith(fontSize: fontSize),
+            ),
           ),
         ],
       ),

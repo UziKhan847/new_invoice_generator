@@ -33,20 +33,41 @@ bool deviceAllowsDesktop(BuildContext context) {
   return shortestSide >= 600;
 }
 
+const _layoutModeKey = 'layout_mode_v1';
+
+/// Reads the persisted layout mode override (if any) before [runApp], so the
+/// very first frame already renders the right layout. Pass the result to
+/// `layoutModeProvider.overrideWith(() => LayoutModeNotifier(initial))` in
+/// `main()`. Without this, the notifier has to guess the platform default
+/// synchronously and correct itself once prefs load — which flashes the
+/// wrong layout for a frame on startup whenever the saved override disagrees
+/// with the platform default (e.g. "mobile" saved on a desktop OS).
+Future<LayoutMode> loadInitialLayoutMode() async {
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString(_layoutModeKey);
+  return switch (saved) {
+    'desktop' => LayoutMode.desktop,
+    'mobile' => LayoutMode.mobile,
+    _ => isDesktopPlatform ? LayoutMode.desktop : LayoutMode.mobile,
+  };
+}
+
 class LayoutModeNotifier extends Notifier<LayoutMode> {
-  static const _key = 'layout_mode_v1';
+  LayoutModeNotifier([this._initial]);
+  final LayoutMode? _initial;
 
   @override
   LayoutMode build() {
-    // Start from the platform default; an stored override (if any) is applied
-    // asynchronously and wins.
+    if (_initial != null) return _initial;
+    // Fallback for when this isn't seeded via main() (e.g. tests): guess the
+    // platform default and correct asynchronously once prefs load.
     _load();
     return isDesktopPlatform ? LayoutMode.desktop : LayoutMode.mobile;
   }
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_key);
+    final saved = prefs.getString(_layoutModeKey);
     if (saved == null) return; // no override → keep the platform default
     state = switch (saved) {
       'desktop' => LayoutMode.desktop,
@@ -58,7 +79,7 @@ class LayoutModeNotifier extends Notifier<LayoutMode> {
   Future<void> set(LayoutMode mode) async {
     state = mode;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, mode.prefsValue);
+    await prefs.setString(_layoutModeKey, mode.prefsValue);
   }
 
   Future<void> toggle() async {
@@ -68,7 +89,7 @@ class LayoutModeNotifier extends Notifier<LayoutMode> {
   /// Clear the override so the app reverts to the platform default.
   Future<void> resetToPlatformDefault() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+    await prefs.remove(_layoutModeKey);
     state = isDesktopPlatform ? LayoutMode.desktop : LayoutMode.mobile;
   }
 }

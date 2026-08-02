@@ -86,6 +86,7 @@ class ExpensesScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'expenses_fab',
         onPressed: () => _showAddEdit(context, ref),
         child: const Icon(Icons.add),
       ),
