@@ -71,6 +71,7 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
 
           return Form(
             key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             child: ListView(
               padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 24),
               children: [

@@ -102,6 +102,7 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

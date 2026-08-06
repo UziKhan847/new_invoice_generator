@@ -1,6 +1,8 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/main.dart';
+import 'package:new_invoice_generator/providers/immersive_mode.dart';
 import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/company_profile.dart';
@@ -163,6 +165,50 @@ class MoreScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
+
+          if (Platform.isAndroid) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+                child: Builder(
+                  builder: (context) {
+                    final immersive = ref.watch(immersiveModeProvider);
+                    return SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: immersive,
+                      onChanged: (v) =>
+                          ref.read(immersiveModeProvider.notifier).set(v),
+                      secondary: Icon(
+                        immersive
+                            ? Icons.fullscreen
+                            : Icons.fullscreen_exit_outlined,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      title: const Text(
+                        'Immersive mode',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Hide the navigation bar for more screen space. '
+                        'Swipe from the bottom edge to reveal it briefly.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withAlpha(140),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           Card(
             child: Column(
               children: [

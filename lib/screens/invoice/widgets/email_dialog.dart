@@ -3,8 +3,8 @@ import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/services/email.dart';
 
-/// Shows the "Email Invoice" dialog. Auto-fills the customer email if present,
-/// explains the two-step share-sheet flow, and triggers EmailService on send.
+/// Shows the "Email Invoice" dialog. Auto-fills the customer email if present
+/// and triggers EmailService on send.
 Future<void> showEmailInvoiceDialog({
   required BuildContext context,
   required Invoice invoice,
@@ -69,9 +69,7 @@ Future<void> showEmailInvoiceDialog({
                 ),
                 SizedBox(height: 6),
                 Text(
-                  '1. Your mail app opens with the recipient pre-filled.\n'
-                  '2. A share sheet opens — pick your mail app again to attach the PDF.\n'
-                  '3. Hit send.',
+                  'The invoice PDF will be emailed directly to this address.',
                   style: TextStyle(fontSize: 11, color: Colors.blue),
                 ),
               ],

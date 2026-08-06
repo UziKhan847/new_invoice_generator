@@ -1,14 +1,15 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:new_invoice_generator/main.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:printing/printing.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EmailService {
+  /// Sends the invoice by email via the `send-invoice-email` Supabase Edge
+  /// Function, which holds the SMTP credentials server-side and relays the
+  /// message — the SMTP password never ships inside the app.
   static Future<void> emailInvoice({
     required BuildContext context,
     required Invoice invoice,
@@ -23,47 +24,38 @@ class EmailService {
 
     final bytes = await PdfService.buildPdfBytes(inv, company: company, customer: customer);
     final fileName = '${invoice.fileBaseName}.pdf';
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/$fileName');
-    await file.writeAsBytes(bytes);
-
     final subject = 'Invoice ${invoice.invoiceNumber} — ${invoice.customerName}';
     final htmlBody = _buildHtmlBody(invoice);
-    final plainBody = _buildPlainBody(invoice);
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      try {
-        final email = Email(
-          recipients: [recipientEmail],
-          subject: subject,
-          body: htmlBody,
-          attachmentPaths: [file.path],
-          isHTML: true,
-        );
-        await FlutterEmailSender.send(email);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context)
-            ..clearSnackBars()
-            ..showSnackBar(
-                const SnackBar(content: Text('Email opened successfully!')));
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context)
-            ..clearSnackBars()
-            ..showSnackBar(SnackBar(content: Text('Error opening email: $e')));
-        }
-      }
-    } else {
-      // Linux / desktop — mailto with plain text body + separate PDF share
-      final mailUri = Uri(
-        scheme: 'mailto',
-        path: recipientEmail,
-        query: 'subject=${Uri.encodeQueryComponent(subject)}'
-            '&body=${Uri.encodeQueryComponent(plainBody)}',
+    try {
+      await supabase.functions.invoke(
+        'send-invoice-email',
+        body: {
+          'to': recipientEmail,
+          'subject': subject,
+          'html': htmlBody,
+          'attachmentBase64': base64Encode(bytes),
+          'attachmentFilename': fileName,
+        },
       );
-      if (await canLaunchUrl(mailUri)) await launchUrl(mailUri);
-      await Printing.sharePdf(bytes: bytes, filename: fileName);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(const SnackBar(content: Text('Email sent!')));
+      }
+    } on FunctionException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(
+              content: Text('Error sending email: ${e.details ?? e.reasonPhrase}')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text('Error sending email: $e')));
+      }
     }
   }
 
@@ -216,55 +208,5 @@ class EmailService {
 
 </body>
 </html>''';
-  }
-
-  // ── Plain text fallback (for Linux/desktop mailto) ─────────────────────────
-  static String _buildPlainBody(Invoice invoice) {
-    final lines = StringBuffer();
-    lines.writeln('Dear ${invoice.customerName},');
-    lines.writeln();
-    lines.writeln('Please find below the details for Invoice ${invoice.invoiceNumber}.');
-    lines.writeln('Issue Date: ${invoice.issueDate.toLocal().toString().split(' ')[0]}');
-    if (invoice.dueDate != null) {
-      lines.writeln('Due Date: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}');
-    }
-    lines.writeln();
-    lines.writeln('ITEMS');
-    lines.writeln('─────────────────────────────────────────');
-    for (final item in invoice.items) {
-      lines.writeln(
-          '${item.description} × ${item.quantity}  @  \$${item.unitPrice.toStringAsFixed(2)}  =  \$${item.total.toStringAsFixed(2)}');
-      if (item.hasDiscount) {
-        lines.writeln('  Discount: ${item.discountLabel}  (−\$${item.discountAmount.toStringAsFixed(2)})');
-      }
-    }
-    lines.writeln('─────────────────────────────────────────');
-    lines.writeln('Subtotal: \$${invoice.subtotal.toStringAsFixed(2)}');
-    lines.writeln('Tax (13%): \$${invoice.tax.toStringAsFixed(2)}');
-    lines.writeln('TOTAL: \$${invoice.total.toStringAsFixed(2)}');
-    switch (invoice.paymentMethod) {
-      case 'etransfer':
-        if (invoice.senderEmail != null) {
-          lines.writeln();
-          lines.writeln('Pay via E-Transfer to: ${invoice.senderEmail}');
-          lines.writeln('Please include invoice #${invoice.invoiceNumber} in the message.');
-        }
-      case 'stripe':
-        lines.writeln();
-        if (invoice.stripePaymentLink?.isNotEmpty == true) {
-          lines.writeln('Pay via Stripe: ${invoice.stripePaymentLink}');
-        } else {
-          lines.writeln('Pay via Stripe — contact sender for payment link.');
-        }
-      default:
-        break;
-    }
-    if (invoice.notes?.isNotEmpty == true) {
-      lines.writeln();
-      lines.writeln('Notes: ${invoice.notes}');
-    }
-    lines.writeln();
-    lines.writeln('The full invoice PDF is attached for your records.');
-    return lines.toString();
   }
 }
