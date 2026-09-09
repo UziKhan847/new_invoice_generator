@@ -30,11 +30,11 @@ class _ImportCustomersScreenState extends ConsumerState<ImportCustomersScreen> {
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
       );
-      if (result == null || result.files.isEmpty) {
+      if (result.isEmpty) {
         setState(() => _loading = false);
         return;
       }
-      final file = result.files.first;
+      final file = result.first;
       // v12: read bytes on demand instead of the deprecated `bytes`/`withData`
       final Uint8List bytes = await file.readAsBytes();
       if (bytes.isEmpty) {

@@ -24,8 +24,8 @@ void callbackDispatcher() {
     if (taskName == _kRecurringTask) {
       // Re-init Supabase in the background isolate
       await Supabase.initialize(
-        url: 'YOUR_SUPABASE_URL',
-        publishableKey: 'YOUR_SUPABASE_ANON_KEY',
+        url: url,
+        publishableKey: anonKey,
       );
       await NotificationService.init();
 
