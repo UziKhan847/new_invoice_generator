@@ -15,6 +15,7 @@ import 'package:new_invoice_generator/screens/invoice/create/widgets/invoice_for
 import 'package:new_invoice_generator/screens/invoice/create/widgets/items_summary_section.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/payment_method.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/sender_section.dart';
+import 'package:new_invoice_generator/utils/number_format.dart';
 
 class CreateInvoiceScreen extends ConsumerStatefulWidget {
   /// Optional invoice to prefill — used for editing duplicates.
@@ -57,6 +58,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final _customTaxLabelCtrl = TextEditingController();
   bool _isPrivate = false;
   PaymentMethod _paymentMethod = PaymentMethod.etransfer;
+  bool _saving = false;
 
   // Controllers for simple text fields
   final _stripeLinkCtrl = TextEditingController();
@@ -155,6 +157,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   // ── Save ──────────────────────────────────────────────────────────────────
   Future<void> _save(Map<String, dynamic> company) async {
+    // Guards against a double-tap firing two addInvoice() calls that each
+    // generate a number concurrently, which could otherwise produce two
+    // invoices sharing the same invoice number.
+    if (_saving) return;
+
     if (_customerName == null) {
       ScaffoldMessenger.of(
         context,
@@ -198,88 +205,110 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       if (!mounted) return;
     }
 
-    final companyAddress = Address(
-      line: company['address_line'] as String? ?? '',
-      city: company['city'] as String? ?? '',
-      province: company['province_region'] as String? ?? '',
-      postalCode: company['postal_code'] as String? ?? '',
-      country: company['country'] as String? ?? 'Canada',
-    );
-
-    if (editing != null) {
-      // ── UPDATE in place: keep id + invoice number ──────────────────────────
-      final updated = editing.copyWith(
-        customerName: _customerName!,
-        customerId: _customerId,
-        customerEmail: _customerEmail,
-        customerPhone: _customerPhone,
-        items: _items,
-        issueDate: _issueDate,
-        dueDate: _dueDate,
-        senderEmployeeId: _employee?.id,
-        senderName: _employee?.name,
-        senderRole: _employee?.role,
-        senderEmail: _employee?.email,
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-        taxRate: _taxRate(company),
-        taxLabel: _taxLabel(company),
-        isExport: _isExport,
-        isPrivate: _isPrivate,
-        paymentMethod: _paymentMethod.value,
-        stripePaymentLink:
-            _paymentMethod == PaymentMethod.stripe &&
-                _stripeLinkCtrl.text.trim().isNotEmpty
-            ? _stripeLinkCtrl.text.trim()
-            : null,
-        customerAddress: _customerAddress,
+    setState(() => _saving = true);
+    try {
+      final companyAddress = Address(
+        line: company['address_line'] as String? ?? '',
+        city: company['city'] as String? ?? '',
+        province: company['province_region'] as String? ?? '',
+        postalCode: company['postal_code'] as String? ?? '',
+        country: company['country'] as String? ?? 'Canada',
       );
-      await ref.read(invoiceProvider.notifier).updateInvoice(updated);
-      if (mounted) Navigator.pop(context);
-      return;
-    }
 
-    // ── CREATE new ───────────────────────────────────────────────────────────
-    await ref
-        .read(invoiceProvider.notifier)
-        .addInvoice(
-          Invoice(
-            invoiceNumber: '',
-            customerName: _customerName!,
-            customerId: _customerId,
-            customerEmail: _customerEmail,
-            customerPhone: _customerPhone,
-            items: _items,
-            issueDate: _issueDate,
-            dueDate: _dueDate,
-            senderEmployeeId: _employee?.id,
-            senderName: _employee?.name,
-            senderRole: _employee?.role,
-            senderEmail: _employee?.email,
-            notes: _notesCtrl.text.trim().isEmpty
-                ? null
-                : _notesCtrl.text.trim(),
-            taxRate: _taxRate(company),
-            taxLabel: _taxLabel(company),
-            isExport: _isExport,
-            isPrivate: _isPrivate,
-            paymentMethod: _paymentMethod.value,
-            stripePaymentLink:
-                _paymentMethod == PaymentMethod.stripe &&
-                    _stripeLinkCtrl.text.trim().isNotEmpty
-                ? _stripeLinkCtrl.text.trim()
-                : null,
-            // Customer address snapshot
-            customerAddress: _customerAddress,
-            // Company snapshot — frozen at creation
-            companyName: company['name'] as String?,
-            companyEmail: company['email'] as String?,
-            companyPhone: company['phone'] as String?,
-            businessNumber: company['business_number'] as String?,
-            rtNumber: company['rt_number'] as String?,
-            companyAddress: companyAddress,
-          ),
+      if (editing != null) {
+        // ── UPDATE in place: keep id + invoice number ────────────────────
+        final updated = editing.copyWith(
+          customerName: _customerName!,
+          customerId: _customerId,
+          customerEmail: _customerEmail,
+          customerPhone: _customerPhone,
+          items: _items,
+          issueDate: _issueDate,
+          dueDate: _dueDate,
+          clearDueDate: _dueDate == null,
+          senderEmployeeId: _employee?.id,
+          senderName: _employee?.name,
+          senderRole: _employee?.role,
+          senderEmail: _employee?.email,
+          clearSender: _employee == null,
+          notes: _notesCtrl.text.trim().isEmpty
+              ? null
+              : _notesCtrl.text.trim(),
+          clearNotes: _notesCtrl.text.trim().isEmpty,
+          taxRate: _taxRate(company),
+          taxLabel: _taxLabel(company),
+          isExport: _isExport,
+          isPrivate: _isPrivate,
+          paymentMethod: _paymentMethod.value,
+          stripePaymentLink:
+              _paymentMethod == PaymentMethod.stripe &&
+                  _stripeLinkCtrl.text.trim().isNotEmpty
+              ? _stripeLinkCtrl.text.trim()
+              : null,
+          // Any change away from Stripe, or an emptied link field, must
+          // clear the old link rather than leave a stale pay-now URL on
+          // the invoice.
+          clearStripeLink:
+              _paymentMethod != PaymentMethod.stripe ||
+              _stripeLinkCtrl.text.trim().isEmpty,
+          customerAddress: _customerAddress,
         );
-    if (mounted) Navigator.pop(context);
+        await ref.read(invoiceProvider.notifier).updateInvoice(updated);
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      // ── CREATE new ──────────────────────────────────────────────────────
+      await ref
+          .read(invoiceProvider.notifier)
+          .addInvoice(
+            Invoice(
+              invoiceNumber: '',
+              customerName: _customerName!,
+              customerId: _customerId,
+              customerEmail: _customerEmail,
+              customerPhone: _customerPhone,
+              items: _items,
+              issueDate: _issueDate,
+              dueDate: _dueDate,
+              senderEmployeeId: _employee?.id,
+              senderName: _employee?.name,
+              senderRole: _employee?.role,
+              senderEmail: _employee?.email,
+              notes: _notesCtrl.text.trim().isEmpty
+                  ? null
+                  : _notesCtrl.text.trim(),
+              taxRate: _taxRate(company),
+              taxLabel: _taxLabel(company),
+              isExport: _isExport,
+              isPrivate: _isPrivate,
+              paymentMethod: _paymentMethod.value,
+              stripePaymentLink:
+                  _paymentMethod == PaymentMethod.stripe &&
+                      _stripeLinkCtrl.text.trim().isNotEmpty
+                  ? _stripeLinkCtrl.text.trim()
+                  : null,
+              // Customer address snapshot
+              customerAddress: _customerAddress,
+              // Company snapshot — frozen at creation
+              companyName: company['name'] as String?,
+              companyEmail: company['email'] as String?,
+              companyPhone: company['phone'] as String?,
+              businessNumber: company['business_number'] as String?,
+              rtNumber: company['rt_number'] as String?,
+              companyAddress: companyAddress,
+            ),
+          );
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -299,7 +328,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _taxMode = TaxMode.custom;
         _customTaxRateCtrl.text = (r * 100)
             .toStringAsFixed(r * 100 % 1 == 0 ? 0 : 3)
-            .replaceAll(RegExp(r'\.?0+\$'), '');
+            // `\$` in a raw string is a literal dollar sign, not an
+            // end-of-string anchor — this never matched, so "13.000" never
+            // got trimmed down to "13". `$` (unescaped) is the anchor.
+            .replaceAll(RegExp(r'\.?0+$'), '');
         _customTaxLabelCtrl.text = l;
       }
     }
@@ -489,11 +521,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
           // ── Save ──────────────────────────────────────────────────
           ElevatedButton(
-            onPressed: () => _save(company),
+            onPressed: _saving ? null : () => _save(company),
             style: ElevatedButton.styleFrom(
               minimumSize: const Size.fromHeight(50),
             ),
-            child: const Text('Save Invoice', style: TextStyle(fontSize: 16)),
+            child: _saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save Invoice', style: TextStyle(fontSize: 16)),
           ),
           const SizedBox(height: 40),
         ],
@@ -524,11 +562,6 @@ class _TaxModeCard extends StatelessWidget {
     required this.onCustomChanged,
   });
 
-  String _pct(double rate) {
-    final p = rate * 100;
-    if (p == p.truncateToDouble()) return '${p.toInt()}%';
-    return '${p.toStringAsFixed(3).replaceAll(RegExp(r'0+\$'), '').replaceAll(RegExp(r'\.\$'), '')}%';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -555,7 +588,7 @@ class _TaxModeCard extends StatelessWidget {
               _option(
                 context,
                 value: TaxMode.standard,
-                title: 'Standard ($stdLabel ${_pct(stdRate)})',
+                title: 'Standard ($stdLabel ${NumFmt.percent(stdRate)})',
                 subtitle: 'Your province\'s tax rate',
               ),
               _option(
@@ -624,7 +657,7 @@ class _TaxModeCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'On the invoice: $effectiveLabel ${_pct(effectiveRate)}',
+                'On the invoice: $effectiveLabel ${NumFmt.percent(effectiveRate)}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,

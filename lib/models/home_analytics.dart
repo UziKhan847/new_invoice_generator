@@ -100,8 +100,10 @@ class HomeAnalyticsNotifier extends AsyncNotifier<HomeAnalytics> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
+    // ref.invalidateSelf() (rather than calling build() by hand) keeps
+    // Riverpod's own dependency/disposal bookkeeping intact.
+    ref.invalidateSelf();
+    await future;
   }
 }
 

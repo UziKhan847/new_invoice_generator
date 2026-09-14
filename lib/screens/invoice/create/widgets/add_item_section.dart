@@ -20,12 +20,24 @@ class _AddItemSectionState extends State<AddItemSection> {
   final _discountCtrl = TextEditingController();
   bool _discountIsPercent = true;
 
+  // Description → Qty → Unit price → Discount → Add, so a keyboard/desktop
+  // user can Tab-and-Enter through a whole line item without reaching for
+  // the mouse.
+  final _descFocus     = FocusNode();
+  final _qtyFocus      = FocusNode();
+  final _priceFocus    = FocusNode();
+  final _discountFocus = FocusNode();
+
   @override
   void dispose() {
     _descCtrl.dispose();
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
     _discountCtrl.dispose();
+    _descFocus.dispose();
+    _qtyFocus.dispose();
+    _priceFocus.dispose();
+    _discountFocus.dispose();
     super.dispose();
   }
 
@@ -48,6 +60,8 @@ class _AddItemSectionState extends State<AddItemSection> {
     _qtyCtrl.clear();
     _priceCtrl.clear();
     _discountCtrl.clear();
+    // Ready for the next line item without reaching for the mouse.
+    _descFocus.requestFocus();
   }
 
   @override
@@ -58,6 +72,9 @@ class _AddItemSectionState extends State<AddItemSection> {
         children: [
           TextField(
               controller: _descCtrl,
+              focusNode: _descFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) => _qtyFocus.requestFocus(),
               decoration:
                   const InputDecoration(labelText: 'Description')),
           const SizedBox(height: 8),
@@ -65,6 +82,9 @@ class _AddItemSectionState extends State<AddItemSection> {
             Expanded(
               child: TextField(
                   controller: _qtyCtrl,
+                  focusNode: _qtyFocus,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => _priceFocus.requestFocus(),
                   keyboardType: const TextInputType.numberWithOptions(
                       decimal: true),
                   decoration: const InputDecoration(
@@ -75,6 +95,9 @@ class _AddItemSectionState extends State<AddItemSection> {
             Expanded(
               child: TextField(
                   controller: _priceCtrl,
+                  focusNode: _priceFocus,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => _discountFocus.requestFocus(),
                   keyboardType: const TextInputType.numberWithOptions(
                       decimal: true),
                   decoration: const InputDecoration(
@@ -86,6 +109,9 @@ class _AddItemSectionState extends State<AddItemSection> {
             Expanded(
               child: TextField(
                 controller: _discountCtrl,
+                focusNode: _discountFocus,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _add(),
                 keyboardType: const TextInputType.numberWithOptions(
                     decimal: true),
                 decoration: InputDecoration(

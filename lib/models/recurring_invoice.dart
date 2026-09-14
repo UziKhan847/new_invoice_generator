@@ -78,15 +78,34 @@ class RecurringInvoice {
     };
   }
 
-  static DateTime computeNextDue(String frequency, {DateTime? from}) {
+  /// [dayOfMonth] anchors monthly/yearly recurrence to a fixed day (e.g. the
+  /// day the template was created on) so repeated calls don't drift — without
+  /// it, a Jan-31 template would roll Jan 31 → Feb (no 31st, normalizes to
+  /// Mar 3) → Mar 31 → ... and never land on month-end again. Falls back to
+  /// [from]'s day when omitted (legacy rows created before this field was
+  /// read). The result is clamped to the target month's actual length so a
+  /// day-31 anchor lands on Feb 28/29 instead of rolling into March.
+  static DateTime computeNextDue(
+    String frequency, {
+    DateTime? from,
+    int? dayOfMonth,
+  }) {
     final base = from ?? DateTime.now();
     switch (frequency) {
       case 'weekly':   return base.add(const Duration(days: 7));
       case '4_weekly': return base.add(const Duration(days: 28));
-      case 'monthly':  return DateTime(base.year, base.month + 1, base.day);
-      case 'yearly':   return DateTime(base.year + 1, base.month, base.day);
-      default:         return DateTime(base.year, base.month + 1, base.day);
+      case 'monthly':  return _addMonths(base, 1, dayOfMonth ?? base.day);
+      case 'yearly':   return _addMonths(base, 12, dayOfMonth ?? base.day);
+      default:         return _addMonths(base, 1, dayOfMonth ?? base.day);
     }
+  }
+
+  static DateTime _addMonths(DateTime base, int months, int anchorDay) {
+    final totalMonths = base.year * 12 + (base.month - 1) + months;
+    final year = totalMonths ~/ 12;
+    final month = totalMonths % 12 + 1;
+    final lastDayOfMonth = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, anchorDay.clamp(1, lastDayOfMonth));
   }
 
   String get frequencyLabel {

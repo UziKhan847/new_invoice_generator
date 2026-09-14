@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/monthly_bar.dart';
@@ -5,7 +6,7 @@ import 'package:new_invoice_generator/models/monthly_bar.dart';
 /// Horizontally-scrollable revenue bar chart. Bars have a fixed width so on a
 /// phone you see ~7 at a time and scroll for the rest (matches the design).
 /// A fixed Y-axis (with gridlines) stays pinned on the left.
-class RevenueBarChart extends StatelessWidget {
+class RevenueBarChart extends StatefulWidget {
   final List<MonthlyBar> bars;
   final void Function(int index)? onBarTap;
   final int? selectedIndex;
@@ -17,120 +18,169 @@ class RevenueBarChart extends StatelessWidget {
     this.selectedIndex,
   });
 
+  @override
+  State<RevenueBarChart> createState() => _RevenueBarChartState();
+}
+
+class _RevenueBarChartState extends State<RevenueBarChart> {
   static const double _barWidth = 26;
   static const double _barGap = 18;
   static const double _yAxisWidth = 38;
 
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // On desktop a mouse only has a vertical wheel; without this, hovering the
+  // chart and scrolling just scrolls the page behind it instead of panning
+  // the chart. Redirect vertical wheel deltas to horizontal scroll.
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    if (!_scrollController.hasClients) return;
+    final target = (_scrollController.offset + event.scrollDelta.dy).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    _scrollController.jumpTo(target);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bars = widget.bars;
+    final onBarTap = widget.onBarTap;
+    final selectedIndex = widget.selectedIndex;
     final p = AppColors.of(context);
     if (bars.isEmpty) {
       return Center(
-          child: Text('No revenue data yet',
-              style: AppTypography.bodyMuted(p.textTertiary)));
+        child: Text(
+          'No revenue data yet',
+          style: AppTypography.bodyMuted(p.textTertiary),
+        ),
+      );
     }
 
     final maxVal = bars.map((b) => b.value).fold(0.0, (a, b) => a > b ? a : b);
     // Round the axis max up to a "nice" number
     final axisMax = _niceMax(maxVal);
     // The default selected bar = highest (or the explicit selection)
-    final selected = selectedIndex ??
+    final selected =
+        selectedIndex ??
         bars.indexWhere((b) => b.value == maxVal).clamp(0, bars.length - 1);
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final chartHeight = constraints.maxHeight;
-      const labelStrip = 22.0; // month labels under bars
-      const valueStrip = 16.0; // value label above the tallest
-      final plotHeight = chartHeight - labelStrip - valueStrip;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chartHeight = constraints.maxHeight;
+        const labelStrip = 22.0; // month labels under bars
+        const valueStrip = 16.0; // value label above the tallest
+        final plotHeight = chartHeight - labelStrip - valueStrip;
 
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Fixed Y axis ────────────────────────────────────────
-          SizedBox(
-            width: _yAxisWidth,
-            child: Padding(
-              padding: const EdgeInsets.only(top: valueStrip),
-              child: _YAxis(axisMax: axisMax, height: plotHeight, palette: p),
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Fixed Y axis ────────────────────────────────────────
+            SizedBox(
+              width: _yAxisWidth,
+              child: Padding(
+                padding: const EdgeInsets.only(top: valueStrip),
+                child: _YAxis(axisMax: axisMax, height: plotHeight, palette: p),
+              ),
             ),
-          ),
-          // ── Scrollable bars ─────────────────────────────────────
-          Expanded(
-            child: Stack(
-              children: [
-                // Gridlines behind the bars
-                Padding(
-                  padding: const EdgeInsets.only(top: valueStrip),
-                  child: _Gridlines(height: plotHeight, palette: p),
-                ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: List.generate(bars.length, (i) {
-                      final bar = bars[i];
-                      final frac =
-                          axisMax == 0 ? 0.0 : (bar.value / axisMax).clamp(0.0, 1.0);
-                      final barH = plotHeight * frac;
-                      final isSel = i == selected;
-
-                      return Padding(
-                        padding: EdgeInsets.only(
-                            right: _barGap,
-                            left: i == 0 ? 4 : 0),
-                        child: GestureDetector(
-                          onTap: onBarTap == null ? null : () => onBarTap!(i),
-                          behavior: HitTestBehavior.opaque,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // Value label (only on selected)
-                              SizedBox(
-                                height: valueStrip,
-                                child: isSel && bar.value > 0
-                                    ? _ValueChip(
-                                        text: _money(bar.value), palette: p)
-                                    : null,
-                              ),
-                              // Bar
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.easeOutCubic,
-                                width: _barWidth,
-                                height: barH < 2 ? 2 : barH,
-                                decoration: BoxDecoration(
-                                  color: isSel ? p.primary : p.barMuted,
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(5)),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              // Month label
-                              SizedBox(
-                                height: labelStrip - 6,
-                                width: _barWidth + 8,
-                                child: Text(
-                                  bar.label,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  style: AppTypography.numeric(
-                                      isSel ? p.ink : p.textTertiary),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+            // ── Scrollable bars ─────────────────────────────────────
+            Expanded(
+              child: Stack(
+                children: [
+                  // Gridlines behind the bars
+                  Padding(
+                    padding: const EdgeInsets.only(top: valueStrip),
+                    child: _Gridlines(height: plotHeight, palette: p),
                   ),
-                ),
-              ],
+                  Listener(
+                    onPointerSignal: _onPointerSignal,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _scrollController,
+                      // No explicit physics — inherits the platform-appropriate
+                      // default (clamping on desktop/Android, bouncing on
+                      // iOS/macOS) instead of forcing iOS-style bounce everywhere.
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(bars.length, (i) {
+                          final bar = bars[i];
+                          final frac = axisMax == 0
+                              ? 0.0
+                              : (bar.value / axisMax).clamp(0.0, 1.0);
+                          final barH = plotHeight * frac;
+                          final isSel = i == selected;
+
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: _barGap,
+                              left: i == 0 ? 4 : 0,
+                            ),
+                            child: GestureDetector(
+                              onTap: onBarTap == null
+                                  ? null
+                                  : () => onBarTap(i),
+                              behavior: HitTestBehavior.opaque,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // Value label (only on selected)
+                                  SizedBox(
+                                    height: valueStrip,
+                                    child: isSel && bar.value > 0
+                                        ? _ValueChip(
+                                            text: _money(bar.value),
+                                            palette: p,
+                                          )
+                                        : null,
+                                  ),
+                                  // Bar
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 500),
+                                    curve: Curves.easeOutCubic,
+                                    width: _barWidth,
+                                    height: barH < 2 ? 2 : barH,
+                                    decoration: BoxDecoration(
+                                      color: isSel ? p.primary : p.barMuted,
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(5),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  // Month label
+                                  SizedBox(
+                                    height: labelStrip - 6,
+                                    width: _barWidth + 8,
+                                    child: Text(
+                                      bar.label,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      style: AppTypography.numeric(
+                                        isSel ? p.ink : p.textTertiary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 
   static String _money(double v) => v >= 1000
@@ -162,9 +212,12 @@ class _ValueChip extends StatelessWidget {
           color: palette.primaryTint,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text(text,
-            style: AppTypography.numeric(palette.primary)
-                .copyWith(fontWeight: FontWeight.w800, fontSize: 10)),
+        child: Text(
+          text,
+          style: AppTypography.numeric(
+            palette.primary,
+          ).copyWith(fontWeight: FontWeight.w800, fontSize: 10),
+        ),
       ),
     );
   }
@@ -173,8 +226,11 @@ class _ValueChip extends StatelessWidget {
 class _YAxis extends StatelessWidget {
   final double axisMax, height;
   final AppPalette palette;
-  const _YAxis(
-      {required this.axisMax, required this.height, required this.palette});
+  const _YAxis({
+    required this.axisMax,
+    required this.height,
+    required this.palette,
+  });
   @override
   Widget build(BuildContext context) {
     const divisions = 4;

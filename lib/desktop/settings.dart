@@ -394,20 +394,23 @@ class _BackBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppColors.of(context);
-    return Material(
-      color: p.surface,
-      borderRadius: BorderRadius.circular(AppRadii.button),
-      child: InkWell(
-        onTap: onTap,
+    return Tooltip(
+      message: 'Back',
+      child: Material(
+        color: p.surface,
         borderRadius: BorderRadius.circular(AppRadii.button),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.button),
-            border: Border.all(color: p.cardBorder),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadii.button),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.button),
+              border: Border.all(color: p.cardBorder),
+            ),
+            child: Icon(Icons.arrow_back, size: 20, color: p.ink),
           ),
-          child: Icon(Icons.arrow_back, size: 20, color: p.ink),
         ),
       ),
     );

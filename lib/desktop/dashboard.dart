@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
-import 'package:new_invoice_generator/providers/home_analytics.dart';
+import 'package:new_invoice_generator/models/home_analytics.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/desktop/shell.dart';
 import 'package:new_invoice_generator/desktop/widgets.dart';

@@ -56,10 +56,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           );
       // AuthGate will rebuild and show AppShell once company.onboarded = true
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 

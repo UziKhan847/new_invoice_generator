@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/address.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/screens/widgets/address_form.dart';
 import 'package:new_invoice_generator/screens/widgets/phone_field.dart';
 import 'package:new_invoice_generator/utils/validators.dart';
@@ -211,8 +212,23 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
   }
 }
 
-/// Helper to show the sheet.
+/// Helper to show the sheet. On desktop platforms this presents as a
+/// centered dialog instead — a sheet sliding up from the bottom of a
+/// 1440px window is a mobile idiom that reads oddly on desktop, and a
+/// centered dialog also gets Escape-to-dismiss "for free" via showDialog's
+/// default barrierDismissible.
 Future<void> showAddCustomerSheet(BuildContext context, {Customer? existing}) {
+  if (isDesktopPlatform) {
+    return showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
+          child: AddCustomerSheet(existing: existing),
+        ),
+      ),
+    );
+  }
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,

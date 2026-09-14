@@ -146,6 +146,9 @@ class InvoiceQuickMenu extends ConsumerWidget {
     Customer? customer,
   ) {
     final emailCtrl = TextEditingController(text: invoice.customerEmail ?? '');
+    // Dispose once the dialog route is popped, however it was dismissed
+    // (Cancel, Send, or tapping the barrier) — this function isn't async, so
+    // a try/finally around showDialog isn't an option here.
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -211,7 +214,7 @@ class InvoiceQuickMenu extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ).then((_) => emailCtrl.dispose());
   }
 }
 

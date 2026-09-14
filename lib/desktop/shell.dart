@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/desktop/charts.dart';
 import 'package:new_invoice_generator/desktop/customers.dart';
 import 'package:new_invoice_generator/desktop/dashboard.dart';
+import 'package:new_invoice_generator/desktop/dialogs.dart';
 import 'package:new_invoice_generator/desktop/guide.dart';
 import 'package:new_invoice_generator/desktop/invoice/invoices.dart';
 import 'package:new_invoice_generator/desktop/overview.dart';
 import 'package:new_invoice_generator/desktop/settings.dart';
+import 'package:new_invoice_generator/desktop/shortcuts.dart';
 import 'package:new_invoice_generator/desktop/tax_report.dart';
 import 'package:new_invoice_generator/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/models/home_analytics.dart';
 import 'package:new_invoice_generator/providers/company.dart';
+import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 
 /// Which top-level desktop section is showing.
 class DesktopNavNotifier extends Notifier<int> {
@@ -21,8 +28,9 @@ class DesktopNavNotifier extends Notifier<int> {
   void select(int index) => state = index;
 }
 
-final desktopNavProvider =
-    NotifierProvider<DesktopNavNotifier, int>(DesktopNavNotifier.new);
+final desktopNavProvider = NotifierProvider<DesktopNavNotifier, int>(
+  DesktopNavNotifier.new,
+);
 
 class DesktopShell extends ConsumerWidget {
   const DesktopShell({super.key});
@@ -34,8 +42,11 @@ class DesktopShell extends ConsumerWidget {
     _NavItem('Customers', Icons.people_outline, Icons.people),
     _NavItem('Dashboard', Icons.dashboard_outlined, Icons.dashboard),
     _NavItem('Charts', Icons.bar_chart_outlined, Icons.bar_chart),
-    _NavItem('Tax Report', Icons.account_balance_outlined,
-        Icons.account_balance),
+    _NavItem(
+      'Tax Report',
+      Icons.account_balance_outlined,
+      Icons.account_balance,
+    ),
   ];
 
   static const _pages = [
@@ -47,30 +58,112 @@ class DesktopShell extends ConsumerWidget {
     DesktopTaxReport(),
   ];
 
+  // Ctrl/Cmd+1..6 jump straight to a section, matching _sections' order.
+  static const _sectionKeys = [
+    LogicalKeyboardKey.digit1,
+    LogicalKeyboardKey.digit2,
+    LogicalKeyboardKey.digit3,
+    LogicalKeyboardKey.digit4,
+    LogicalKeyboardKey.digit5,
+    LogicalKeyboardKey.digit6,
+  ];
+
+  void _refreshSection(WidgetRef ref, int index) {
+    switch (index) {
+      case 0: // Overview
+        ref.invalidate(homeAnalyticsProvider);
+        ref.invalidate(invoiceProvider);
+      case 1: // Invoices
+        ref.invalidate(invoiceProvider);
+      case 2: // Customers
+        ref.invalidate(customerProvider);
+      case 3: // Dashboard
+      case 4: // Charts
+        ref.invalidate(homeAnalyticsProvider);
+      case 5: // Tax Report
+        ref.invalidate(invoiceProvider);
+        ref.invalidate(expenseProvider);
+    }
+  }
+
+  Future<void> _newInvoice(BuildContext context) => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),
+  );
+
+  Future<void> _openSettings(BuildContext context) => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const DesktopSettings()),
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = AppColors.of(context);
     final selected = ref.watch(desktopNavProvider);
 
-    return Scaffold(
-      backgroundColor: p.background,
-      body: Row(
-        children: [
-          _Sidebar(selected: selected),
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: p.background,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              clipBehavior: Clip.antiAlias,
-              // The hosted screen provides its own Scaffold/body. We strip its
-              // app bar visually by letting it fill; mobile screens still work.
-              child: _pages[selected],
+    return Shortcuts(
+      shortcuts: {
+        cmdOrCtrl(LogicalKeyboardKey.keyN): const NewInvoiceIntent(),
+        cmdOrCtrl(LogicalKeyboardKey.keyF): const FocusSearchIntent(),
+        cmdOrCtrl(LogicalKeyboardKey.keyP): const ExportIntent(),
+        cmdOrCtrl(LogicalKeyboardKey.keyR): const RefreshSectionIntent(),
+        cmdOrCtrl(LogicalKeyboardKey.comma): const OpenSettingsIntent(),
+        for (var i = 0; i < _sectionKeys.length; i++)
+          cmdOrCtrl(_sectionKeys[i]): GoToSectionIntent(i),
+      },
+      child: Actions(
+        actions: {
+          NewInvoiceIntent: CallbackAction<NewInvoiceIntent>(
+            onInvoke: (_) => _newInvoice(context),
+          ),
+          FocusSearchIntent: CallbackAction<FocusSearchIntent>(
+            onInvoke: (_) =>
+                desktopSectionSearchFocus[selected]?.requestFocus(),
+          ),
+          ExportIntent: CallbackAction<ExportIntent>(
+            onInvoke: (_) => desktopSectionExportAction[selected]?.call(),
+          ),
+          RefreshSectionIntent: CallbackAction<RefreshSectionIntent>(
+            onInvoke: (_) => _refreshSection(ref, selected),
+          ),
+          OpenSettingsIntent: CallbackAction<OpenSettingsIntent>(
+            onInvoke: (_) => _openSettings(context),
+          ),
+          GoToSectionIntent: CallbackAction<GoToSectionIntent>(
+            onInvoke: (intent) =>
+                ref.read(desktopNavProvider.notifier).select(intent.index),
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: p.background,
+            body: Row(
+              children: [
+                _Sidebar(selected: selected),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: p.background,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    // The hosted screen provides its own Scaffold/body. We
+                    // strip its app bar visually by letting it fill; mobile
+                    // screens still work.
+                    //
+                    // IndexedStack (not `_pages[selected]`) keeps every
+                    // section's widget tree alive across tab switches, so
+                    // scroll position and local state (filters, chart tab,
+                    // etc.) survive instead of resetting each time.
+                    child: IndexedStack(index: selected, children: _pages),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -118,23 +211,32 @@ class _Sidebar extends ConsumerWidget {
                     color: p.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(initials,
-                      style: AppTypography.title(Colors.white)
-                          .copyWith(fontSize: 14)),
+                  child: Text(
+                    initials,
+                    style: AppTypography.title(
+                      Colors.white,
+                    ).copyWith(fontSize: 14),
+                  ),
                 ),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(companyName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              AppTypography.title(p.ink).copyWith(fontSize: 14)),
-                      Text('Invoicing workspace',
-                          style: AppTypography.caption(p.textTertiary)
-                              .copyWith(fontSize: 11)),
+                      Text(
+                        companyName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.title(
+                          p.ink,
+                        ).copyWith(fontSize: 14),
+                      ),
+                      Text(
+                        'Invoicing workspace',
+                        style: AppTypography.caption(
+                          p.textTertiary,
+                        ).copyWith(fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
@@ -144,8 +246,10 @@ class _Sidebar extends ConsumerWidget {
 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text('WORKSPACE',
-                style: AppTypography.label(p.textTertiary)),
+            child: Text(
+              'WORKSPACE',
+              style: AppTypography.label(p.textTertiary),
+            ),
           ),
 
           // Nav items
@@ -157,8 +261,7 @@ class _Sidebar extends ConsumerWidget {
               item: s,
               active: active,
               badge: badge,
-              onTap: () =>
-                  ref.read(desktopNavProvider.notifier).select(i),
+              onTap: () => ref.read(desktopNavProvider.notifier).select(i),
             );
           }),
 
@@ -167,20 +270,26 @@ class _Sidebar extends ConsumerWidget {
 
           // Help / How to use
           _SidebarTile(
-            item: const _NavItem(
-                'How to Use', Icons.help_outline, Icons.help),
+            item: const _NavItem('How to Use', Icons.help_outline, Icons.help),
             active: false,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const DesktopGuide())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DesktopGuide()),
+            ),
           ),
 
           // Settings
           _SidebarTile(
             item: const _NavItem(
-                'Settings', Icons.settings_outlined, Icons.settings),
+              'Settings',
+              Icons.settings_outlined,
+              Icons.settings,
+            ),
             active: false,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const DesktopSettings())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DesktopSettings()),
+            ),
           ),
 
           // User chip → menu with logout
@@ -213,8 +322,9 @@ class _Sidebar extends ConsumerWidget {
                       backgroundColor: p.primaryTint,
                       child: Text(
                         initials.isNotEmpty ? initials[0] : '?',
-                        style:
-                            AppTypography.title(p.primary).copyWith(fontSize: 13),
+                        style: AppTypography.title(
+                          p.primary,
+                        ).copyWith(fontSize: 13),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -223,17 +333,20 @@ class _Sidebar extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              (company['email'] as String?)
-                                      ?.split('@')
-                                      .first ??
-                                  'You',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.body(p.ink)
-                                  .copyWith(fontSize: 13)),
-                          Text('Workspace owner',
-                              style: AppTypography.caption(p.textTertiary)
-                                  .copyWith(fontSize: 11)),
+                            (company['email'] as String?)?.split('@').first ??
+                                'You',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.body(
+                              p.ink,
+                            ).copyWith(fontSize: 13),
+                          ),
+                          Text(
+                            'Workspace owner',
+                            style: AppTypography.caption(
+                              p.textTertiary,
+                            ).copyWith(fontSize: 11),
+                          ),
                         ],
                       ),
                     ),
@@ -249,23 +362,12 @@ class _Sidebar extends ConsumerWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('You will be returned to the login screen.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text('Log out', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final confirm = await confirmDialog(
+      context,
+      title: 'Log out?',
+      content: 'You will be returned to the login screen.',
+      confirmLabel: 'Log out',
+      danger: true,
     );
     if (confirm == true) {
       await supabase.auth.signOut();
@@ -273,8 +375,11 @@ class _Sidebar extends ConsumerWidget {
   }
 
   static String _initials(String name) {
-    final parts =
-        name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
       return parts.first.substring(0, 1).toUpperCase();
@@ -310,26 +415,36 @@ class _SidebarTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             child: Row(
               children: [
-                Icon(active ? item.activeIcon : item.icon,
-                    size: 20, color: active ? p.primary : p.textSecondary),
+                Icon(
+                  active ? item.activeIcon : item.icon,
+                  size: 20,
+                  color: active ? p.primary : p.textSecondary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(item.label,
-                      style: active
-                          ? AppTypography.title(p.primary).copyWith(fontSize: 14)
-                          : AppTypography.body(p.textSecondary)),
+                  child: Text(
+                    item.label,
+                    style: active
+                        ? AppTypography.title(p.primary).copyWith(fontSize: 14)
+                        : AppTypography.body(p.textSecondary),
+                  ),
                 ),
                 if (badge != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: p.warningBg,
                       borderRadius: BorderRadius.circular(AppRadii.pill),
                     ),
-                    child: Text('$badge',
-                        style: AppTypography.caption(p.warningText)
-                            .copyWith(fontSize: 11)),
+                    child: Text(
+                      '$badge',
+                      style: AppTypography.caption(
+                        p.warningText,
+                      ).copyWith(fontSize: 11),
+                    ),
                   ),
               ],
             ),

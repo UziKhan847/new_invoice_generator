@@ -1,18 +1,46 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/monthly_bar.dart';
 
-class CountLineChart extends StatelessWidget {
+class CountLineChart extends StatefulWidget {
   final List<MonthlyBar> bars;
   final double labelSize;
 
   const CountLineChart({super.key, required this.bars, this.labelSize = 10});
 
+  @override
+  State<CountLineChart> createState() => _CountLineChartState();
+}
+
+class _CountLineChartState extends State<CountLineChart> {
   static const double _pointSpacing = 54; // px per data point
   static const double _yAxisWidth = 38;
 
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Mirrors RevenueBarChart's fix: a mouse's vertical wheel otherwise
+  // scrolls the page behind this chart instead of panning it horizontally.
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    if (!_scrollController.hasClients) return;
+    final target = (_scrollController.offset + event.scrollDelta.dy).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    _scrollController.jumpTo(target);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bars = widget.bars;
+    final labelSize = widget.labelSize;
     final p = AppColors.of(context);
     if (bars.isEmpty || bars.every((b) => b.value == 0)) {
       return Center(
@@ -60,48 +88,51 @@ class CountLineChart extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: SizedBox(
-                  width: plotWidth,
-                  height: chartHeight,
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: plotHeight,
-                        child: CustomPaint(
-                          painter: _LinePainter(
-                            bars: bars,
-                            color: p.primary,
-                            axisMax: axisMax,
-                            gridline: p.gridline,
-                            labelColor: p.primary,
-                            labelSize: labelSize,
+              child: Listener(
+                onPointerSignal: _onPointerSignal,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _scrollController,
+                  child: SizedBox(
+                    width: plotWidth,
+                    height: chartHeight,
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: plotHeight,
+                          child: CustomPaint(
+                            painter: _LinePainter(
+                              bars: bars,
+                              color: p.primary,
+                              axisMax: axisMax,
+                              gridline: p.gridline,
+                              labelColor: p.primary,
+                              labelSize: labelSize,
+                            ),
+                            size: Size(plotWidth, plotHeight),
                           ),
-                          size: Size(plotWidth, plotHeight),
                         ),
-                      ),
-                      SizedBox(
-                        height: labelStrip,
-                        child: Row(
-                          children: bars
-                              .map(
-                                (b) => SizedBox(
-                                  width: plotWidth / bars.length,
-                                  child: Text(
-                                    b.label,
-                                    textAlign: TextAlign.center,
-                                    style: AppTypography.numeric(
-                                      p.textTertiary,
+                        SizedBox(
+                          height: labelStrip,
+                          child: Row(
+                            children: bars
+                                .map(
+                                  (b) => SizedBox(
+                                    width: plotWidth / bars.length,
+                                    child: Text(
+                                      b.label,
+                                      textAlign: TextAlign.center,
+                                      style: AppTypography.numeric(
+                                        p.textTertiary,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              )
-                              .toList(),
+                                )
+                                .toList(),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

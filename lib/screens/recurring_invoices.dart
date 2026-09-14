@@ -751,9 +751,14 @@ class _AddRecurringDialogState extends ConsumerState<_AddRecurringDialog> {
                             label: _labelCtrl.text.trim(),
                             price: double.tryParse(_priceCtrl.text) ?? 0,
                             frequency: _frequency,
+                            // Anchors monthly/yearly recurrence to today's day
+                            // of month so it doesn't drift after month-end
+                            // dates (see RecurringInvoice.computeNextDue).
+                            dayOfMonth: now.day,
                             nextDueDate: RecurringInvoice.computeNextDue(
                               _frequency,
                               from: now,
+                              dayOfMonth: now.day,
                             ),
                           ),
                         );

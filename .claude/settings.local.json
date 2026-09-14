@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(nohup flutter run -d linux)",
+      "Bash(echo \"started PID $!\")",
+      "Bash(break)",
+      "Bash(DISPLAY=:0 /home/uzi/Syncthing/PrivateUz/Flutter/new_invoice_generator/build/linux/x64/debug/bundle/new_invoice_generator)",
+      "Bash(pkill -f \"build/linux/x64/debug/bundle/new_invoice_generator\")",
+      "Bash(DISPLAY=:0 nohup /home/uzi/Syncthing/PrivateUz/Flutter/new_invoice_generator/build/linux/x64/debug/bundle/new_invoice_generator)",
+      "Bash(echo \"PID $!\")",
+      "Bash(DISPLAY=:0 xdotool search --name \"new_invoice_generator\\\\|invoice\")",
+      "Bash(DISPLAY=:0 wmctrl -l)",
+      "Bash(DISPLAY=:0 xdotool search --name \".\" getwindowname %@)",
+      "Bash(DISPLAY=:0 import -window 0x05c00003 /tmp/claude-1000/-home-uzi-Syncthing-PrivateUz-Flutter-new-invoice-generator/15fbc76d-059f-45c6-b312-9396b7e134e8/scratchpad/screenshot_1.png)",
+      "Bash(apt list *)",
+      "Bash(DISPLAY=:0 wmctrl -r 0x05c00003 -e 0,100,100,1400,800)",
+      "Bash(DISPLAY=:0 xwininfo -id 0x05c00003)",
+      "Bash(pkill -f \"flutter run -d linux\")"
+    ]
+  }
+}

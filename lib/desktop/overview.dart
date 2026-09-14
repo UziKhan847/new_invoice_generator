@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/shortcuts.dart';
 import 'package:new_invoice_generator/models/home_analytics.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/providers/company.dart';
@@ -22,6 +23,22 @@ class DesktopOverview extends ConsumerStatefulWidget {
 
 class _DesktopOverviewState extends ConsumerState<DesktopOverview> {
   int? _selectedBar;
+  String _query = '';
+  final _searchFocus = FocusNode(debugLabel: 'OverviewSearch');
+
+  @override
+  void initState() {
+    super.initState();
+    // Section index 0 = Overview in DesktopShell._sections.
+    desktopSectionSearchFocus[0] = _searchFocus;
+  }
+
+  @override
+  void dispose() {
+    desktopSectionSearchFocus.remove(0);
+    _searchFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +55,11 @@ class _DesktopOverviewState extends ConsumerState<DesktopOverview> {
           title: 'Overview',
           subtitle: 'Welcome back, $ownerName',
           actions: [
-            const DesktopSearchField(hint: 'Search invoices, customers'),
+            DesktopSearchField(
+              hint: 'Search recent invoices',
+              focusNode: _searchFocus,
+              onChanged: (v) => setState(() => _query = v),
+            ),
             const SizedBox(width: 12),
             DesktopPrimaryButton(
               icon: Icons.add,
@@ -48,8 +69,6 @@ class _DesktopOverviewState extends ConsumerState<DesktopOverview> {
                 MaterialPageRoute(builder: (_) => const CreateInvoiceScreen()),
               ),
             ),
-            const SizedBox(width: 10),
-            _IconBtn(icon: Icons.notifications_outlined, onTap: () {}),
           ],
         ),
         Expanded(
@@ -148,7 +167,10 @@ class _DesktopOverviewState extends ConsumerState<DesktopOverview> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(flex: 3, child: _RecentInvoices()),
+                        Expanded(
+                          flex: 3,
+                          child: _RecentInvoices(query: _query),
+                        ),
                         const SizedBox(width: 20),
                         Expanded(
                           flex: 2,
@@ -275,15 +297,27 @@ class _RevenueHeader extends StatelessWidget {
 }
 
 class _RecentInvoices extends ConsumerWidget {
+  final String query;
+  const _RecentInvoices({this.query = ''});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = AppColors.of(context);
+    final q = query.trim().toLowerCase();
     final invoices =
         (ref.watch(invoiceProvider).asData?.value ?? [])
             .where((i) => !i.isPrivate)
+            .where(
+              (i) =>
+                  q.isEmpty ||
+                  i.invoiceNumber.toLowerCase().contains(q) ||
+                  i.customerName.toLowerCase().contains(q),
+            )
             .toList()
           ..sort((a, b) => b.issueDate.compareTo(a.issueDate));
-    final recent = invoices.take(6).toList();
+    // Show more once the user is actively searching — the point of a search
+    // box is to find something outside the default "6 most recent" window.
+    final recent = invoices.take(q.isEmpty ? 6 : 20).toList();
 
     return DesktopPanel(
       child: Column(
@@ -322,7 +356,7 @@ class _RecentInvoices extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'No invoices yet',
+                  q.isEmpty ? 'No invoices yet' : 'No matches',
                   style: AppTypography.bodyMuted(p.textTertiary),
                 ),
               ),
@@ -408,33 +442,6 @@ class _RecentRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IconBtn({required this.icon, required this.onTap});
-  @override
-  Widget build(BuildContext context) {
-    final p = AppColors.of(context);
-    return Material(
-      color: p.surface,
-      borderRadius: BorderRadius.circular(AppRadii.button),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.button),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.button),
-            border: Border.all(color: p.cardBorder),
-          ),
-          child: Icon(icon, size: 20, color: p.ink),
         ),
       ),
     );
