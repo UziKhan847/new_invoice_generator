@@ -48,8 +48,18 @@ delete from public.companies c using company_dupes d where c.id = d.dup_id;
 
 -- Prevent this from ever happening again, and let the client use
 -- upsert(..., onConflict: 'owner_id') / catch 23505 as a fast, safe path.
-alter table public.companies
-  add constraint companies_owner_id_key unique (owner_id);
+-- Guarded so re-running this script (e.g. after a partial earlier failure)
+-- doesn't error with 42P07 "relation already exists" on a constraint that a
+-- prior successful run already created.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'companies_owner_id_key'
+  ) then
+    alter table public.companies
+      add constraint companies_owner_id_key unique (owner_id);
+  end if;
+end $$;
 
 commit;
 
