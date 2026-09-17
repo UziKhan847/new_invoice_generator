@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -146,12 +147,12 @@ class DownloadService {
     required String fileName,
   }) async {
     try {
-      // Save to user's home Documents folder
-      final home =
-          Platform.environment['HOME'] ??
-          Platform.environment['USERPROFILE'] ??
-          '/tmp';
-      final dir = Directory('$home/Documents/Invoices');
+      // Building '$HOME/Documents' (or USERPROFILE) by hand produces
+      // "C:\Users\x/Documents" on Windows and breaks entirely when Documents
+      // is redirected (OneDrive) or localized. getApplicationDocumentsDirectory
+      // resolves the platform's real Documents folder correctly everywhere.
+      final docs = await getApplicationDocumentsDirectory();
+      final dir = Directory('${docs.path}/Invoices');
       if (!await dir.exists()) await dir.create(recursive: true);
 
       final filePath = '${dir.path}/$fileName.pdf';

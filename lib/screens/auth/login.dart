@@ -328,9 +328,9 @@ class _SignInFormState extends State<_SignInForm> {
         password: _passwordCtrl.text,
       );
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -351,7 +351,7 @@ class _SignInFormState extends State<_SignInForm> {
         SnackBar(content: Text('Password reset link sent to $email')),
       );
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     }
   }
 
@@ -367,6 +367,7 @@ class _SignInFormState extends State<_SignInForm> {
           label: 'Email',
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 16),
         _Field(
@@ -375,6 +376,7 @@ class _SignInFormState extends State<_SignInForm> {
           label: 'Password',
           icon: Icons.lock_outline,
           obscure: _obscurePassword,
+          textInputAction: TextInputAction.done,
           trailingLabel: GestureDetector(
             onTap: _forgotPassword,
             child: Text(
@@ -491,9 +493,9 @@ class _RegisterFormState extends State<_RegisterForm> {
       );
       if (mounted) setState(() => _success = true);
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -534,6 +536,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           label: 'Email',
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 14),
         _Field(
@@ -542,6 +545,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           label: 'Password',
           icon: Icons.lock_outline,
           obscure: _obscurePassword,
+          textInputAction: TextInputAction.next,
           suffix: IconButton(
             icon: Icon(
               _obscurePassword
@@ -559,6 +563,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           label: 'Confirm password',
           icon: Icons.lock_outline,
           obscure: _obscureConfirm,
+          textInputAction: TextInputAction.done,
           suffix: IconButton(
             icon: Icon(
               _obscureConfirm
@@ -610,6 +615,7 @@ class _Field extends StatelessWidget {
   final Widget? trailingLabel;
   final TextInputType? keyboardType;
   final ValueChanged<String>? onSubmitted;
+  final TextInputAction? textInputAction;
   const _Field({
     required this.controller,
     required this.hint,
@@ -620,6 +626,7 @@ class _Field extends StatelessWidget {
     this.trailingLabel,
     this.keyboardType,
     this.onSubmitted,
+    this.textInputAction,
   });
 
   @override
@@ -640,6 +647,7 @@ class _Field extends StatelessWidget {
           controller: controller,
           obscureText: obscure,
           keyboardType: keyboardType,
+          textInputAction: textInputAction,
           onSubmitted: onSubmitted,
           decoration: InputDecoration(
             hintText: hint,

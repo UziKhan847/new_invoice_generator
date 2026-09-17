@@ -132,11 +132,15 @@ class _LogoAvatar extends ConsumerWidget {
               title: const Text('Choose from gallery'),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take a photo'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
+            // image_picker has no camera implementation on Windows/Linux —
+            // pickImage(source: .camera) throws there. Desktop already has
+            // a file-picker fallback via the gallery option above.
+            if (Platform.isAndroid || Platform.isIOS)
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
           ],
         ),
       ),

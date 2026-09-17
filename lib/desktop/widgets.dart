@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:new_invoice_generator/app_theme.dart';
 
 /// Standard desktop page top bar: title + subtitle on the left, actions on the
@@ -28,16 +29,20 @@ class DesktopTopBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: AppTypography.display(p.ink).copyWith(fontSize: 24)),
+                Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: AppTypography.display(p.ink).copyWith(fontSize: 24),
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: AppTypography.bodyMuted(p.textSecondary)),
+                  Text(
+                    subtitle!,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: AppTypography.bodyMuted(p.textSecondary),
+                  ),
                 ],
               ],
             ),
@@ -59,36 +64,163 @@ class DesktopTopBar extends StatelessWidget {
   }
 }
 
-/// A compact desktop search field for the top bar.
-class DesktopSearchField extends StatelessWidget {
+/// A compact desktop search field for the top bar. Supports an external
+/// [focusNode] (so a shortcut like Ctrl+F can jump into it) and a clear
+/// button once there's text to clear.
+class DesktopSearchField extends StatefulWidget {
   final String hint;
   final ValueChanged<String>? onChanged;
   final double width;
   final TextEditingController? controller;
+  final FocusNode? focusNode;
   const DesktopSearchField({
     super.key,
     this.hint = 'Search',
     this.onChanged,
     this.width = 260,
     this.controller,
+    this.focusNode,
   });
+
+  @override
+  State<DesktopSearchField> createState() => _DesktopSearchFieldState();
+}
+
+class _DesktopSearchFieldState extends State<DesktopSearchField> {
+  TextEditingController? _ownedController;
+  FocusNode? _ownedFocusNode;
+
+  TextEditingController get _controller =>
+      widget.controller ?? (_ownedController ??= TextEditingController());
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+
+  @override
+  void dispose() {
+    _ownedController?.dispose();
+    _ownedFocusNode?.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _controller.clear();
+    widget.onChanged?.call('');
+  }
 
   @override
   Widget build(BuildContext context) {
     final p = AppColors.of(context);
     return SizedBox(
-      width: width,
+      width: widget.width,
       height: 42,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: AppTypography.body(p.ink).copyWith(fontSize: 13),
-        decoration: InputDecoration(
-          hintText: hint,
-          prefixIcon: Icon(Icons.search, size: 18, color: p.textTertiary),
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+      child: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => Shortcuts(
+          shortcuts: const {
+            SingleActivator(LogicalKeyboardKey.escape): _ClearSearchIntent(),
+          },
+          child: Actions(
+            actions: {
+              _ClearSearchIntent: CallbackAction<_ClearSearchIntent>(
+                onInvoke: (_) {
+                  _clear();
+                  return null;
+                },
+              ),
+            },
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              onChanged: widget.onChanged,
+              style: AppTypography.body(p.ink).copyWith(fontSize: 13),
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                prefixIcon: Icon(Icons.search, size: 18, color: p.textTertiary),
+                suffixIcon: _controller.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        tooltip: 'Clear (Esc)',
+                        onPressed: _clear,
+                      ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _ClearSearchIntent extends Intent {
+  const _ClearSearchIntent();
+}
+
+/// Right-click context menu for a row. Left-click / hover behavior is left
+/// to the child (usually a `Material` + `InkWell`) — this only adds the
+/// secondary-click affordance desktop users expect.
+class ContextMenuRegion<T> extends StatelessWidget {
+  final Widget child;
+  final List<PopupMenuEntry<T>> Function(BuildContext context) itemBuilder;
+  final ValueChanged<T> onSelected;
+  const ContextMenuRegion({
+    super.key,
+    required this.child,
+    required this.itemBuilder,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onSecondaryTapDown: (details) async {
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        final selected = await showMenu<T>(
+          context: context,
+          position: RelativeRect.fromRect(
+            details.globalPosition & const Size(1, 1),
+            Offset.zero & overlay.size,
+          ),
+          items: itemBuilder(context),
+        );
+        if (selected != null) onSelected(selected);
+      },
+      child: child,
+    );
+  }
+}
+
+/// Wraps a row with a hover-tinted background and a click cursor — the
+/// default `InkWell` hover overlay is too subtle to read as "this row is
+/// interactive" in a dense table on desktop.
+class HoverableRow extends StatefulWidget {
+  final Widget child;
+  final Color? hoverColor;
+  const HoverableRow({super.key, required this.child, this.hoverColor});
+
+  @override
+  State<HoverableRow> createState() => _HoverableRowState();
+}
+
+class _HoverableRowState extends State<HoverableRow> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppColors.of(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        color: _hovering
+            ? (widget.hoverColor ?? p.surfaceAlt)
+            : Colors.transparent,
+        child: widget.child,
       ),
     );
   }
@@ -145,23 +277,30 @@ class DesktopKpiCard extends StatelessWidget {
               const Spacer(),
               if (badge != null)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeBg ?? p.surfaceAlt,
                     borderRadius: BorderRadius.circular(AppRadii.pill),
                   ),
-                  child: Text(badge!,
-                      style: AppTypography.caption(badgeFg ?? p.textSecondary)
-                          .copyWith(fontSize: 11)),
+                  child: Text(
+                    badge!,
+                    style: AppTypography.caption(
+                      badgeFg ?? p.textSecondary,
+                    ).copyWith(fontSize: 11),
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 16),
-          Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.amount(p.ink).copyWith(fontSize: 26)),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.amount(p.ink).copyWith(fontSize: 26),
+          ),
           const SizedBox(height: 3),
           Text(label, style: AppTypography.bodyMuted(p.textSecondary)),
         ],

@@ -197,6 +197,18 @@ Win32Window::MessageHandler(HWND hwnd,
 
       return 0;
     }
+    case WM_GETMINMAXINFO: {
+      // The desktop layout hard-codes a 236px sidebar + 380px invoice list +
+      // ~300px detail rail; below roughly this size those panes start
+      // clipping their content instead of reflowing.
+      UINT dpi = FlutterDesktopGetDpiForHWND(hwnd);
+      double scale_factor = dpi / 96.0;
+      MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(lparam);
+      info->ptMinTrackSize.x = Scale(900, scale_factor);
+      info->ptMinTrackSize.y = Scale(600, scale_factor);
+      return 0;
+    }
+
     case WM_SIZE: {
       RECT rect = GetClientArea();
       if (child_content_ != nullptr) {

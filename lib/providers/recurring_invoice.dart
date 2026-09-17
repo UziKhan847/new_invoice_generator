@@ -72,15 +72,25 @@ class RecurringInvoiceNotifier
         ),
       ],
       issueDate: now,
-      dueDate: RecurringInvoice.computeNextDue(r.frequency, from: now),
+      dueDate: RecurringInvoice.computeNextDue(
+        r.frequency,
+        from: now,
+        dayOfMonth: r.dayOfMonth,
+      ),
       senderEmployeeId: senderEmployeeId,
       senderName: senderName,
       senderRole: senderRole,
       senderEmail: senderEmail,
     );
     await ref.read(invoiceProvider.notifier).addInvoice(invoice);
-    // Repo signature: updateLastGenerated(String id, String frequency, DateTime)
-    await _repo.updateLastGenerated(r.id!, r.frequency, now);
+    // Advance from the template's own schedule (not `now`) so a manual
+    // "generate now" doesn't reset the anchor day a scheduled run relies on.
+    final next = RecurringInvoice.computeNextDue(
+      r.frequency,
+      from: r.nextDueDate ?? now,
+      dayOfMonth: r.dayOfMonth,
+    );
+    await _repo.updateLastGenerated(r.id!, now, next);
     ref.invalidateSelf();
     await future;
   }

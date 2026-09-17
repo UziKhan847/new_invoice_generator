@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/dialogs.dart';
+import 'package:new_invoice_generator/desktop/shortcuts.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
@@ -14,6 +16,9 @@ class _Aggregate {
   const _Aggregate(this.count, this.totalBilled);
 }
 
+/// Actions available from a customer row's right-click context menu.
+enum _CustomerRowAction { edit, delete }
+
 class DesktopCustomers extends ConsumerStatefulWidget {
   const DesktopCustomers({super.key});
 
@@ -23,6 +28,42 @@ class DesktopCustomers extends ConsumerStatefulWidget {
 
 class _DesktopCustomersState extends ConsumerState<DesktopCustomers> {
   String _query = '';
+  final _searchFocus = FocusNode(debugLabel: 'CustomersSearch');
+
+  @override
+  void initState() {
+    super.initState();
+    // Section index 2 = Customers in DesktopShell._sections — lets Ctrl+F
+    // jump here regardless of which section is currently on screen.
+    desktopSectionSearchFocus[2] = _searchFocus;
+  }
+
+  @override
+  void dispose() {
+    desktopSectionSearchFocus.remove(2);
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRowAction(_CustomerRowAction action, Customer c) async {
+    switch (action) {
+      case _CustomerRowAction.edit:
+        showAddCustomerSheet(context, existing: c);
+      case _CustomerRowAction.delete:
+        final ok = await confirmDialog(
+          context,
+          title: 'Delete customer?',
+          content:
+              '${c.name} will be permanently removed. Their past invoices '
+              'are not affected.',
+          confirmLabel: 'Delete',
+          danger: true,
+        );
+        if (ok == true) {
+          await ref.read(customerProvider.notifier).deleteCustomer(c.id);
+        }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +92,7 @@ class _DesktopCustomersState extends ConsumerState<DesktopCustomers> {
             actions: [
               DesktopSearchField(
                 hint: 'Search by name or email',
+                focusNode: _searchFocus,
                 onChanged: (v) => setState(() => _query = v),
               ),
               const SizedBox(width: 12),
@@ -136,6 +178,8 @@ class _DesktopCustomersState extends ConsumerState<DesktopCustomers> {
                                       context,
                                       existing: c,
                                     ),
+                                    onAction: (action) =>
+                                        _handleRowAction(action, c),
                                   );
                                 },
                               ),
@@ -165,10 +209,12 @@ class _CustomerRow extends StatelessWidget {
   final Customer customer;
   final _Aggregate aggregate;
   final VoidCallback onTap;
+  final ValueChanged<_CustomerRowAction> onAction;
   const _CustomerRow({
     required this.customer,
     required this.aggregate,
     required this.onTap,
+    required this.onAction,
   });
 
   @override
@@ -185,138 +231,153 @@ class _CustomerRow extends StatelessWidget {
     ];
     final tone = tones[c.name.hashCode.abs() % tones.length];
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Row(
-            children: [
-              // Customer (avatar + name + email)
-              Expanded(
-                flex: 5,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: tone.$1,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                        style: AppTypography.title(
-                          tone.$2,
-                        ).copyWith(fontSize: 16),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            c.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+    return ContextMenuRegion<_CustomerRowAction>(
+      onSelected: onAction,
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: _CustomerRowAction.edit, child: Text('Edit')),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: _CustomerRowAction.delete,
+          child: Text('Delete', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+      child: HoverableRow(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                children: [
+                  // Customer (avatar + name + email)
+                  Expanded(
+                    flex: 5,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: tone.$1,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
                             style: AppTypography.title(
-                              p.ink,
-                            ).copyWith(fontSize: 15),
+                              tone.$2,
+                            ).copyWith(fontSize: 16),
                           ),
-                          Text(
-                            c.email.isNotEmpty ? c.email : 'No email on file',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption(
-                              c.email.isNotEmpty
-                                  ? p.textSecondary
-                                  : p.textTertiary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Phone
-              Expanded(
-                flex: 3,
-                child: Text(
-                  c.phone.isNotEmpty ? c.phone : '—',
-                  style: AppTypography.body(
-                    c.phone.isNotEmpty ? p.ink : p.textTertiary,
-                  ).copyWith(fontSize: 13),
-                ),
-              ),
-              // Tags
-              Expanded(
-                flex: 3,
-                child: c.tags.isEmpty
-                    ? Text(
-                        '—',
-                        style: AppTypography.body(
-                          p.textTertiary,
-                        ).copyWith(fontSize: 13),
-                      )
-                    : Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: c.tags
-                            .take(3)
-                            .map(
-                              (t) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: p.primaryTint,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.pill,
-                                  ),
-                                ),
-                                child: Text(
-                                  t,
-                                  style: AppTypography.caption(
-                                    p.primary,
-                                  ).copyWith(fontSize: 11),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                c.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.title(
+                                  p.ink,
+                                ).copyWith(fontSize: 15),
+                              ),
+                              Text(
+                                c.email.isNotEmpty
+                                    ? c.email
+                                    : 'No email on file',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.caption(
+                                  c.email.isNotEmpty
+                                      ? p.textSecondary
+                                      : p.textTertiary,
                                 ),
                               ),
-                            )
-                            .toList(),
-                      ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Phone
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      c.phone.isNotEmpty ? c.phone : '—',
+                      style: AppTypography.body(
+                        c.phone.isNotEmpty ? p.ink : p.textTertiary,
+                      ).copyWith(fontSize: 13),
+                    ),
+                  ),
+                  // Tags
+                  Expanded(
+                    flex: 3,
+                    child: c.tags.isEmpty
+                        ? Text(
+                            '—',
+                            style: AppTypography.body(
+                              p.textTertiary,
+                            ).copyWith(fontSize: 13),
+                          )
+                        : Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: c.tags
+                                .take(3)
+                                .map(
+                                  (t) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: p.primaryTint,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadii.pill,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      t,
+                                      style: AppTypography.caption(
+                                        p.primary,
+                                      ).copyWith(fontSize: 11),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                  ),
+                  // Invoice count
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      '${aggregate.count}',
+                      textAlign: TextAlign.right,
+                      style: AppTypography.title(p.ink).copyWith(fontSize: 14),
+                    ),
+                  ),
+                  // Total billed
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      '\$${aggregate.totalBilled.toStringAsFixed(2)}',
+                      textAlign: TextAlign.right,
+                      style: AppTypography.title(p.ink).copyWith(fontSize: 14),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 28,
+                    child: Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: p.textTertiary,
+                    ),
+                  ),
+                ],
               ),
-              // Invoice count
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${aggregate.count}',
-                  textAlign: TextAlign.right,
-                  style: AppTypography.title(p.ink).copyWith(fontSize: 14),
-                ),
-              ),
-              // Total billed
-              Expanded(
-                flex: 3,
-                child: Text(
-                  '\$${aggregate.totalBilled.toStringAsFixed(2)}',
-                  textAlign: TextAlign.right,
-                  style: AppTypography.title(p.ink).copyWith(fontSize: 14),
-                ),
-              ),
-              SizedBox(
-                width: 28,
-                child: Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: p.textTertiary,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

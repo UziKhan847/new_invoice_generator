@@ -8,6 +8,7 @@ import 'package:new_invoice_generator/providers/immersive_mode.dart';
 import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/services/notification.dart';
+import 'package:new_invoice_generator/services/recurring_invoice_runner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -29,7 +30,11 @@ void callbackDispatcher() {
       );
       await NotificationService.init();
 
-      // Recurring check runs via RecurringInvoiceRunner on app resume
+      // The whole point of registering this periodic task is to catch up
+      // recurring invoices while the app isn't open — this call was
+      // previously missing, making the registration below a no-op that did
+      // nothing but re-initialize Supabase every 12 hours.
+      await RecurringInvoiceRunner.checkAndGenerate();
     }
     return Future.value(true);
   });

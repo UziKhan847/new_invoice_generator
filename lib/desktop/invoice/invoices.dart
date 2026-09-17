@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/dialogs.dart';
 import 'package:new_invoice_generator/desktop/invoice/detail.dart';
 import 'package:new_invoice_generator/desktop/invoice/document_view.dart';
+import 'package:new_invoice_generator/desktop/shortcuts.dart';
 import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
@@ -11,9 +14,15 @@ import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
 import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
+import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
+import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
+import 'package:new_invoice_generator/services/download.dart';
 
 /// Filter for the invoice list.
 enum InvoiceFilter { all, paid, unpaid }
+
+/// Actions available from an invoice row's right-click context menu.
+enum _RowAction { open, edit, duplicate, markPaid, email, download, delete }
 
 /// Currently selected invoice id in the desktop master-detail view (null = none).
 class SelectedInvoiceNotifier extends Notifier<String?> {
@@ -36,6 +45,148 @@ class DesktopInvoices extends ConsumerStatefulWidget {
 
 class _DesktopInvoicesState extends ConsumerState<DesktopInvoices> {
   InvoiceFilter _filter = InvoiceFilter.all;
+  // Keyboard row navigation (↑/↓/Enter) and Ctrl+P export both need to know
+  // the currently filtered/sorted list outside of build() — kept in sync at
+  // the top of build() below.
+  final _listFocus = FocusNode(debugLabel: 'InvoiceListNav');
+  List<Invoice> _lastFiltered = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    desktopSectionExportAction[1] = _exportSelected;
+  }
+
+  @override
+  void dispose() {
+    desktopSectionExportAction.remove(1);
+    _listFocus.dispose();
+    super.dispose();
+  }
+
+  Invoice? get _selectedInvoice {
+    final selectedId = ref.read(selectedInvoiceProvider);
+    for (final i in _lastFiltered) {
+      if (i.id == selectedId) return i;
+    }
+    return _lastFiltered.isNotEmpty ? _lastFiltered.first : null;
+  }
+
+  Customer? _resolveCustomer(String? customerId) {
+    if (customerId == null) return null;
+    final list = ref.read(customerProvider).asData?.value;
+    if (list == null) return null;
+    for (final c in list) {
+      if (c.id == customerId) return c;
+    }
+    return null;
+  }
+
+  void _exportSelected() {
+    final selected = _selectedInvoice;
+    if (selected == null) return;
+    final company = ref.read(companyProvider).asData?.value;
+    DownloadService.downloadInvoice(
+      context: context,
+      invoice: selected,
+      company: company,
+      customer: _resolveCustomer(selected.customerId),
+    );
+  }
+
+  Future<void> _handleRowAction(_RowAction action, Invoice inv) async {
+    switch (action) {
+      case _RowAction.open:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DesktopInvoiceDetail(invoiceId: inv.id ?? ''),
+          ),
+        );
+      case _RowAction.edit:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CreateInvoiceScreen(editingInvoice: inv),
+          ),
+        );
+      case _RowAction.duplicate:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => CreateInvoiceScreen(prefill: inv)),
+        );
+      case _RowAction.markPaid:
+        await showMarkPaidDialog(context: context, ref: ref, invoice: inv);
+      case _RowAction.email:
+        final company = ref.read(companyProvider).asData?.value;
+        if (!context.mounted) return;
+        await showEmailInvoiceDialog(
+          context: context,
+          invoice: inv,
+          company: company,
+          customer: _resolveCustomer(inv.customerId),
+        );
+      case _RowAction.download:
+        final company = ref.read(companyProvider).asData?.value;
+        if (!context.mounted) return;
+        await DownloadService.downloadInvoice(
+          context: context,
+          invoice: inv,
+          company: company,
+          customer: _resolveCustomer(inv.customerId),
+        );
+      case _RowAction.delete:
+        final ok = await confirmDialog(
+          context,
+          title: 'Delete invoice?',
+          content: '${inv.invoiceNumber} will be permanently removed.',
+          confirmLabel: 'Delete',
+          danger: true,
+        );
+        if (ok == true && inv.id != null) {
+          ref.read(selectedInvoiceProvider.notifier).select(null);
+          await ref.read(invoiceProvider.notifier).deleteInvoice(inv.id!);
+        }
+    }
+  }
+
+  KeyEventResult _handleListKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || _lastFiltered.isEmpty) {
+      return KeyEventResult.ignored;
+    }
+    final selectedId = ref.read(selectedInvoiceProvider);
+    final index = _lastFiltered.indexWhere((i) => i.id == selectedId);
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      final next = (index < 0 ? 0 : index + 1).clamp(
+        0,
+        _lastFiltered.length - 1,
+      );
+      ref.read(selectedInvoiceProvider.notifier).select(_lastFiltered[next].id);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      final prev = (index < 0 ? 0 : index - 1).clamp(
+        0,
+        _lastFiltered.length - 1,
+      );
+      ref.read(selectedInvoiceProvider.notifier).select(_lastFiltered[prev].id);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.enter) {
+      final current = _selectedInvoice;
+      if (current?.id != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DesktopInvoiceDetail(invoiceId: current!.id!),
+          ),
+        );
+      }
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +237,10 @@ class _DesktopInvoicesState extends ConsumerState<DesktopInvoices> {
                 InvoiceFilter.unpaid =>
                   visible.where((i) => !i.isPaid).toList(),
               };
+              // Cached for the keyboard handler and Ctrl+P export action,
+              // which run outside of build() in response to key/shortcut
+              // events and need the current list without re-deriving it.
+              _lastFiltered = filtered;
 
               final selectedId = ref.watch(selectedInvoiceProvider);
               // Resolve selection; default to the first if none / invalid.
@@ -124,22 +279,44 @@ class _DesktopInvoicesState extends ConsumerState<DesktopInvoices> {
                                       ),
                                     ),
                                   )
-                                : ListView.separated(
-                                    itemCount: filtered.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 8),
-                                    itemBuilder: (context, i) {
-                                      final inv = filtered[i];
-                                      return _InvoiceListItem(
-                                        invoice: inv,
-                                        selected: inv.id == selected?.id,
-                                        onTap: () => ref
-                                            .read(
-                                              selectedInvoiceProvider.notifier,
-                                            )
-                                            .select(inv.id),
-                                      );
-                                    },
+                                // Focus wrapper enables ↑/↓/Enter navigation
+                                // once the user has clicked into the list at
+                                // least once (see _InvoiceListItem.onTap).
+                                : Focus(
+                                    focusNode: _listFocus,
+                                    onKeyEvent: _handleListKey,
+                                    child: ListView.separated(
+                                      itemCount: filtered.length,
+                                      separatorBuilder: (_, _) =>
+                                          const SizedBox(height: 8),
+                                      itemBuilder: (context, i) {
+                                        final inv = filtered[i];
+                                        return _InvoiceListItem(
+                                          invoice: inv,
+                                          selected: inv.id == selected?.id,
+                                          onTap: () {
+                                            ref
+                                                .read(
+                                                  selectedInvoiceProvider
+                                                      .notifier,
+                                                )
+                                                .select(inv.id);
+                                            _listFocus.requestFocus();
+                                          },
+                                          onOpen: () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  DesktopInvoiceDetail(
+                                                    invoiceId: inv.id ?? '',
+                                                  ),
+                                            ),
+                                          ),
+                                          onAction: (action) =>
+                                              _handleRowAction(action, inv),
+                                        );
+                                      },
+                                    ),
                                   ),
                           ),
                         ],
@@ -221,10 +398,14 @@ class _InvoiceListItem extends StatelessWidget {
   final Invoice invoice;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback onOpen;
+  final ValueChanged<_RowAction> onAction;
   const _InvoiceListItem({
     required this.invoice,
     required this.selected,
     required this.onTap,
+    required this.onOpen,
+    required this.onAction,
   });
 
   @override
@@ -250,75 +431,102 @@ class _InvoiceListItem extends StatelessWidget {
       iconBg = p.warningBg;
     }
 
-    return Material(
-      color: selected ? p.primaryTint : p.surface,
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        child: Container(
-          padding: const EdgeInsets.all(13),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.card),
-            border: Border.all(
-              color: selected ? p.primary.withAlpha(110) : p.cardBorder,
-              width: selected ? 1.4 : 1,
-            ),
+    return ContextMenuRegion<_RowAction>(
+      onSelected: onAction,
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: _RowAction.open, child: Text('Open')),
+        const PopupMenuItem(value: _RowAction.edit, child: Text('Edit')),
+        const PopupMenuItem(
+          value: _RowAction.duplicate,
+          child: Text('Duplicate'),
+        ),
+        if (!invoice.isPaid)
+          const PopupMenuItem(
+            value: _RowAction.markPaid,
+            child: Text('Mark as paid'),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 18, color: iconColor),
+        const PopupMenuItem(value: _RowAction.email, child: Text('Email')),
+        const PopupMenuItem(
+          value: _RowAction.download,
+          child: Text('Download PDF'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: _RowAction.delete,
+          child: Text('Delete', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+      child: Material(
+        color: selected ? p.primaryTint : p.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        child: InkWell(
+          onTap: onTap,
+          onDoubleTap: onOpen,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          child: Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              border: Border.all(
+                color: selected ? p.primary.withAlpha(110) : p.cardBorder,
+                width: selected ? 1.4 : 1,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          invoice.invoiceNumber,
-                          style: AppTypography.title(
-                            invoice.isPrivate ? p.purple : p.ink,
-                          ).copyWith(fontSize: 14),
-                        ),
-                        if (invoice.isPrivate) ...[
-                          const SizedBox(width: 5),
-                          Icon(Icons.lock_outline, size: 12, color: p.purple),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 18, color: iconColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            invoice.invoiceNumber,
+                            style: AppTypography.title(
+                              invoice.isPrivate ? p.purple : p.ink,
+                            ).copyWith(fontSize: 14),
+                          ),
+                          if (invoice.isPrivate) ...[
+                            const SizedBox(width: 5),
+                            Icon(Icons.lock_outline, size: 12, color: p.purple),
+                          ],
                         ],
-                      ],
-                    ),
+                      ),
+                      Text(
+                        invoice.customerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption(p.textSecondary),
+                      ),
+                      Text(date, style: AppTypography.numeric(p.textTertiary)),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     Text(
-                      invoice.customerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.caption(p.textSecondary),
+                      '\$${invoice.total.toStringAsFixed(2)}',
+                      style: AppTypography.title(p.ink).copyWith(fontSize: 14),
                     ),
-                    Text(date, style: AppTypography.numeric(p.textTertiary)),
+                    const SizedBox(height: 4),
+                    invoice.isPaid
+                        ? AppPill.paid(context)
+                        : AppPill.unpaid(context),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${invoice.total.toStringAsFixed(2)}',
-                    style: AppTypography.title(p.ink).copyWith(fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  invoice.isPaid
-                      ? AppPill.paid(context)
-                      : AppPill.unpaid(context),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -401,11 +609,16 @@ class _PreviewPane extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         Expanded(
-          child: SingleChildScrollView(
-            child: InvoiceDocumentView(
-              invoice: invoice,
-              company: company,
-              customer: customer,
+          child: Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              child: SelectionArea(
+                child: InvoiceDocumentView(
+                  invoice: invoice,
+                  company: company,
+                  customer: customer,
+                ),
+              ),
             ),
           ),
         ),

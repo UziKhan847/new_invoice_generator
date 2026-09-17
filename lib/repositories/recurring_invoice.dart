@@ -45,17 +45,19 @@ class RecurringInvoiceRepository {
         .eq('id', id);
   }
 
+  /// [nextDueDate] is computed by the caller (rather than here) so callers
+  /// that must catch up multiple missed periods can advance it themselves
+  /// instead of always re-anchoring one period from `generated`.
   Future<void> updateLastGenerated(
     String id,
-    String frequency,
     DateTime generated,
+    DateTime nextDueDate,
   ) async {
-    final next = RecurringInvoice.computeNextDue(frequency, from: generated);
     await supabase
         .from('recurring_invoices')
         .update({
           'last_generated_at': generated.toIso8601String().split('T')[0],
-          'next_due_date': next.toIso8601String().split('T')[0],
+          'next_due_date': nextDueDate.toIso8601String().split('T')[0],
         })
         .eq('id', id);
   }

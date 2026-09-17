@@ -183,7 +183,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               for (final id in _selected) {
                 await notifier.deleteCustomer(id);
               }
-              _clearSelection();
+              if (mounted) _clearSelection();
             },
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),

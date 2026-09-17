@@ -3,6 +3,7 @@ import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/models/invoice/item.dart';
 import 'package:new_invoice_generator/models/recurring_invoice.dart';
 import 'package:new_invoice_generator/repositories/recurring_invoice.dart';
+import 'package:new_invoice_generator/services/invoice_number.dart';
 import 'package:new_invoice_generator/services/notification.dart';
 
 /// Runs entirely outside of Flutter's widget tree — safe to call from
@@ -10,17 +11,22 @@ import 'package:new_invoice_generator/services/notification.dart';
 ///
 /// Returns the number of invoices that were auto-generated.
 class RecurringInvoiceRunner {
+  // A single recurring template should never generate more than this many
+  // invoices in one run, even if next_due_date is stale by years — caps a
+  // runaway catch-up loop from bad/ancient data instead of flooding the
+  // company with invoices.
+  static const _maxCatchUpPerTemplate = 24;
+
   static Future<int> checkAndGenerate() async {
     try {
       // 1. Get authenticated user's company
       final user = supabase.auth.currentUser;
       if (user == null) return 0;
 
-      final companyRes = await supabase
-          .from('companies')
-          .select('id, tax_rate, tax_label')
-          .eq('owner_id', user.id)
-          .maybeSingle();
+      final companyRes = await _fetchCompanyByOwner(
+        user.id,
+        columns: 'id, tax_rate, tax_label',
+      );
       if (companyRes == null) return 0;
 
       final companyId  = companyRes['id'] as String;
@@ -41,6 +47,7 @@ class RecurringInvoiceRunner {
       if (rows.isEmpty) return 0;
 
       final repo = RecurringInvoiceRepository();
+      final numberService = InvoiceNumberService();
       int generated = 0;
 
       for (final row in rows) {
@@ -51,48 +58,71 @@ class RecurringInvoiceRunner {
           final cust = row['customers'] as Map<String, dynamic>?;
           final emp  = row['employees'] as Map<String, dynamic>?;
 
-          final now = DateTime.now();
+          // Catch up every period that fell due while the app was closed
+          // instead of collapsing missed periods into one and re-anchoring
+          // the schedule to "now" (which silently drops the rest).
+          var periodDue = r.nextDueDate ?? today;
+          var iterations = 0;
+          while (!periodDue.isAfter(today) &&
+              iterations < _maxCatchUpPerTemplate) {
+            iterations++;
 
-          // 3. Build the invoice
-          final invoice = Invoice(
-            invoiceNumber:     '',  // auto-assigned by DB trigger
-            customerName:      r.customerName!,
-            customerId:        r.customerId,
-            customerEmail:     cust?['email'] as String?,
-            customerPhone:     cust?['phone'] as String?,
-            items: [
-              InvoiceItem(
-                description: r.label,
-                quantity:    1,
-                unitPrice:   r.price,
+            final invoiceNumber =
+                await numberService.generateNextInvoiceNumber(companyId);
+
+            // 3. Build the invoice, dated for the period it represents
+            final invoice = Invoice(
+              invoiceNumber:     invoiceNumber,
+              customerName:      r.customerName!,
+              customerId:        r.customerId,
+              customerEmail:     cust?['email'] as String?,
+              customerPhone:     cust?['phone'] as String?,
+              items: [
+                InvoiceItem(
+                  description: r.label,
+                  quantity:    1,
+                  unitPrice:   r.price,
+                ),
+              ],
+              issueDate:         periodDue,
+              dueDate:           RecurringInvoice.computeNextDue(
+                r.frequency,
+                from: periodDue,
+                dayOfMonth: r.dayOfMonth,
               ),
-            ],
-            issueDate:         now,
-            dueDate:           RecurringInvoice.computeNextDue(r.frequency, from: now),
-            senderEmployeeId:  r.senderEmployeeId,
-            senderName:        emp?['name'] as String?,
-            senderRole:        emp?['role'] as String?,
-            senderEmail:       emp?['email'] as String?,
-            taxRate:           row['is_export'] == true ? 0.0 : taxRate,
-            taxLabel:          row['is_export'] == true ? 'Export (0%)' : taxLabel,
-            isExport:          row['is_export'] as bool? ?? false,
-            paymentMethod:     row['payment_method'] as String? ?? 'etransfer',
-          );
+              senderEmployeeId:  r.senderEmployeeId,
+              senderName:        emp?['name'] as String?,
+              senderRole:        emp?['role'] as String?,
+              senderEmail:       emp?['email'] as String?,
+              taxRate:           row['is_export'] == true ? 0.0 : taxRate,
+              taxLabel:          row['is_export'] == true ? 'Export (0%)' : taxLabel,
+              isExport:          row['is_export'] as bool? ?? false,
+              paymentMethod:     row['payment_method'] as String? ?? 'etransfer',
+            );
 
-          // 4. Insert invoice
-          await supabase.from('invoices').insert(invoice.toInsertMap(companyId));
+            // 4. Insert invoice
+            await supabase.from('invoices').insert(invoice.toInsertMap(companyId));
+            generated++;
 
-          // 5. Update last_generated_at and next_due_date on recurring template
-          await repo.updateLastGenerated(r.id!, r.frequency, now);
+            // 5. Fire local notification
+            await NotificationService.showRecurringGenerated(
+              index:         generated,
+              customerName:  r.customerName!,
+              amount:        '\$${(r.price * (1 + (row['is_export'] == true ? 0 : taxRate))).toStringAsFixed(2)} CAD',
+            );
 
-          generated++;
+            periodDue = RecurringInvoice.computeNextDue(
+              r.frequency,
+              from: periodDue,
+              dayOfMonth: r.dayOfMonth,
+            );
+          }
 
-          // 6. Fire local notification
-          await NotificationService.showRecurringGenerated(
-            index:         generated,
-            customerName:  r.customerName!,
-            amount:        '\$${(r.price * (1 + (row['is_export'] == true ? 0 : taxRate))).toStringAsFixed(2)} CAD',
-          );
+          // 6. Persist the template's last-run timestamp and the next
+          // still-in-the-future due date reached by the loop above.
+          if (iterations > 0) {
+            await repo.updateLastGenerated(r.id!, today, periodDue);
+          }
         } catch (_) {
           // Skip this one, continue with others
           continue;
@@ -112,11 +142,7 @@ class RecurringInvoiceRunner {
       final user = supabase.auth.currentUser;
       if (user == null) return;
 
-      final companyRes = await supabase
-          .from('companies')
-          .select('id')
-          .eq('owner_id', user.id)
-          .maybeSingle();
+      final companyRes = await _fetchCompanyByOwner(user.id, columns: 'id');
       if (companyRes == null) return;
 
       final today = DateTime.now();
@@ -151,5 +177,22 @@ class RecurringInvoiceRunner {
     } catch (_) {
       // Silently fail — notifications are non-critical
     }
+  }
+
+  /// `.maybeSingle()` throws PostgrestException if more than one row
+  /// matches. A company that still has a leftover duplicate row shouldn't
+  /// make every background check fail silently forever — take the oldest
+  /// matching row deterministically instead (mirrors CompanyRepository).
+  static Future<Map<String, dynamic>?> _fetchCompanyByOwner(
+    String ownerId, {
+    required String columns,
+  }) async {
+    final rows = await supabase
+        .from('companies')
+        .select(columns)
+        .eq('owner_id', ownerId)
+        .order('created_at', ascending: true)
+        .limit(1);
+    return rows.isEmpty ? null : rows.first;
   }
 }

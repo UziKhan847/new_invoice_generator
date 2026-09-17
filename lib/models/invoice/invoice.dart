@@ -150,9 +150,9 @@ class Invoice {
       'customer_id': customerId,
       'issue_date': issueDate.toIso8601String().split('T')[0],
       'due_date': dueDate?.toIso8601String().split('T')[0],
-      'subtotal': subtotal,
-      'tax': tax,
-      'total': total,
+      'subtotal': _round2(subtotal),
+      'tax': _round2(tax),
+      'total': _round2(total),
       'is_paid': isPaid,
       'status': status,
       'sender_employee_id': senderEmployeeId,
@@ -183,9 +183,9 @@ class Invoice {
       'customer_id': customerId,
       'issue_date': issueDate.toIso8601String().split('T')[0],
       'due_date': dueDate?.toIso8601String().split('T')[0],
-      'subtotal': subtotal,
-      'tax': tax,
-      'total': total,
+      'subtotal': _round2(subtotal),
+      'tax': _round2(tax),
+      'total': _round2(total),
       'is_paid': isPaid,
       'status': status,
       'sender_employee_id': senderEmployeeId,
@@ -236,6 +236,15 @@ class Invoice {
     bool? isPrivate,
     String? stripePaymentLink,
     String? paymentMethod,
+    // `x ?? this.x` alone can't tell "not passed, keep the old value" apart
+    // from "passed null, clear it" — so editing an invoice to remove a due
+    // date, sender, note, or Stripe link silently kept the old one. These
+    // flags make clearing explicit, matching InvoiceFilter.copyWith's
+    // clearX pattern.
+    bool clearDueDate = false,
+    bool clearSender = false,
+    bool clearNotes = false,
+    bool clearStripeLink = false,
   }) {
     return Invoice(
       id: id,
@@ -253,21 +262,32 @@ class Invoice {
       companyAddress: companyAddress ?? this.companyAddress,
       items: items ?? this.items,
       issueDate: issueDate ?? this.issueDate,
-      dueDate: dueDate ?? this.dueDate,
+      dueDate: clearDueDate ? null : (dueDate ?? this.dueDate),
       isPaid: isPaid ?? this.isPaid,
       status: status ?? this.status,
-      senderEmployeeId: senderEmployeeId ?? this.senderEmployeeId,
-      senderName: senderName ?? this.senderName,
-      senderRole: senderRole ?? this.senderRole,
-      senderEmail: senderEmail ?? this.senderEmail,
-      notes: notes ?? this.notes,
+      senderEmployeeId: clearSender
+          ? null
+          : (senderEmployeeId ?? this.senderEmployeeId),
+      senderName: clearSender ? null : (senderName ?? this.senderName),
+      senderRole: clearSender ? null : (senderRole ?? this.senderRole),
+      senderEmail: clearSender ? null : (senderEmail ?? this.senderEmail),
+      notes: clearNotes ? null : (notes ?? this.notes),
       taxRate: taxRate ?? this.taxRate,
       taxLabel: taxLabel ?? this.taxLabel,
       isExport: isExport ?? this.isExport,
       isPrivate: isPrivate ?? this.isPrivate,
-      stripePaymentLink: stripePaymentLink ?? this.stripePaymentLink,
+      stripePaymentLink: clearStripeLink
+          ? null
+          : (stripePaymentLink ?? this.stripePaymentLink),
       paymentMethod: paymentMethod ?? this.paymentMethod,
       companyLogoUrl: companyLogoUrl ?? this.companyLogoUrl,
     );
   }
 }
+
+/// Rounds a money amount to 2 decimal places before it's persisted. Binary
+/// floating point means e.g. `0.13 * 100.0` is `13.000000000000002` —
+/// harmless on screen (formatting already truncates it) but it would
+/// otherwise land in the database unrounded and accumulate visibly once
+/// summed across a year of invoices in the tax report.
+double _round2(double v) => (v * 100).round() / 100;

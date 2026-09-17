@@ -22,8 +22,13 @@ class InvoiceRepository {
         .select()
         .single();
     final invoiceId = inserted['id'];
-    for (final item in invoice.items) {
-      await supabase.from('invoice_items').insert(item.toInsertMap(invoiceId));
+    if (invoice.items.isNotEmpty) {
+      // One batch insert instead of one round trip per item — also avoids
+      // leaving the invoice with a subset of its items if a later request
+      // in the loop failed partway through.
+      await supabase
+          .from('invoice_items')
+          .insert(invoice.items.map((i) => i.toInsertMap(invoiceId)).toList());
     }
   }
 
@@ -38,10 +43,15 @@ class InvoiceRepository {
     // 1. Update the invoice row (toUpdateMap omits company_id/created_at)
     await supabase.from('invoices').update(invoice.toUpdateMap()).eq('id', id);
 
-    // 2. Replace line items: delete existing, insert current
+    // 2. Replace line items: delete existing, insert current in one batch.
+    // A batch insert can't fail partway through an item-by-item loop and
+    // leave the invoice with only some of its lines while its header
+    // (subtotal/tax/total) already reflects all of them.
     await supabase.from('invoice_items').delete().eq('invoice_id', id);
-    for (final item in invoice.items) {
-      await supabase.from('invoice_items').insert(item.toInsertMap(id));
+    if (invoice.items.isNotEmpty) {
+      await supabase
+          .from('invoice_items')
+          .insert(invoice.items.map((i) => i.toInsertMap(id)).toList());
     }
   }
 

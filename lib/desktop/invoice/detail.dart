@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/dialogs.dart';
 import 'package:new_invoice_generator/desktop/invoice/document_view.dart';
 import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/models/customer.dart';
@@ -53,6 +54,7 @@ class DesktopInvoiceDetail extends ConsumerWidget {
                 DesktopTopBar(
                   leading: _IconBtn(
                     icon: Icons.arrow_back,
+                    tooltip: 'Back',
                     onTap: () => Navigator.maybePop(context),
                   ),
                   title: 'Invoice ${inv.invoiceNumber}',
@@ -80,92 +82,97 @@ class DesktopInvoiceDetail extends ConsumerWidget {
                   ],
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Document
-                        Expanded(
-                          flex: 3,
-                          child: InvoiceDocumentView(
-                            invoice: inv,
-                            company: company,
-                            customer: customer,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Document
+                          Expanded(
+                            flex: 3,
+                            child: SelectionArea(
+                              child: InvoiceDocumentView(
+                                invoice: inv,
+                                company: company,
+                                customer: customer,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 20),
-                        // Right rail
-                        SizedBox(
-                          width: 300,
-                          child: Column(
-                            children: [
-                              _StatusCard(invoice: inv),
-                              const SizedBox(height: 16),
-                              _ActivityCard(invoice: inv),
-                              const SizedBox(height: 16),
-                              if (!inv.isPaid)
+                          const SizedBox(width: 20),
+                          // Right rail
+                          SizedBox(
+                            width: 300,
+                            child: Column(
+                              children: [
+                                _StatusCard(invoice: inv),
+                                const SizedBox(height: 16),
+                                _ActivityCard(invoice: inv),
+                                const SizedBox(height: 16),
+                                if (!inv.isPaid)
+                                  _RailButton(
+                                    icon: Icons.check_circle_outline,
+                                    label: 'Mark as paid',
+                                    filled: true,
+                                    onTap: () async {
+                                      await showMarkPaidDialog(
+                                        context: context,
+                                        ref: ref,
+                                        invoice: inv,
+                                      );
+                                      ref.invalidate(
+                                        invoiceEventsProvider(inv.id ?? ''),
+                                      );
+                                    },
+                                  ),
+                                if (inv.isPaid)
+                                  _RailButton(
+                                    icon: Icons.receipt_long,
+                                    label: 'Generate receipt',
+                                    filled: true,
+                                    onTap: () =>
+                                        ReceiptPdfService.generateReceipt(inv),
+                                  ),
+                                const SizedBox(height: 8),
                                 _RailButton(
-                                  icon: Icons.check_circle_outline,
-                                  label: 'Mark as paid',
-                                  filled: true,
-                                  onTap: () async {
-                                    await showMarkPaidDialog(
-                                      context: context,
-                                      ref: ref,
-                                      invoice: inv,
-                                    );
-                                    ref.invalidate(
-                                      invoiceEventsProvider(inv.id ?? ''),
-                                    );
-                                  },
-                                ),
-                              if (inv.isPaid)
-                                _RailButton(
-                                  icon: Icons.receipt_long,
-                                  label: 'Generate receipt',
-                                  filled: true,
-                                  onTap: () =>
-                                      ReceiptPdfService.generateReceipt(inv),
-                                ),
-                              const SizedBox(height: 8),
-                              _RailButton(
-                                icon: Icons.email_outlined,
-                                label: 'Email invoice',
-                                onTap: () => showEmailInvoiceDialog(
-                                  context: context,
-                                  invoice: inv,
-                                  company: company,
-                                  customer: customer,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _RailButton(
-                                icon: Icons.download_outlined,
-                                label: 'Download PDF',
-                                onTap: () => DownloadService.downloadInvoice(
-                                  context: context,
-                                  invoice: inv,
-                                  company: company,
-                                  customer: customer,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _RailButton(
-                                icon: Icons.copy_outlined,
-                                label: 'Duplicate',
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        CreateInvoiceScreen(prefill: inv),
+                                  icon: Icons.email_outlined,
+                                  label: 'Email invoice',
+                                  onTap: () => showEmailInvoiceDialog(
+                                    context: context,
+                                    invoice: inv,
+                                    company: company,
+                                    customer: customer,
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                _RailButton(
+                                  icon: Icons.download_outlined,
+                                  label: 'Download PDF',
+                                  onTap: () => DownloadService.downloadInvoice(
+                                    context: context,
+                                    invoice: inv,
+                                    company: company,
+                                    customer: customer,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _RailButton(
+                                  icon: Icons.copy_outlined,
+                                  label: 'Duplicate',
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          CreateInvoiceScreen(prefill: inv),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -178,23 +185,12 @@ class DesktopInvoiceDetail extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Invoice inv) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete invoice?'),
-        content: Text('${inv.invoiceNumber} will be permanently removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final ok = await confirmDialog(
+      context,
+      title: 'Delete invoice?',
+      content: '${inv.invoiceNumber} will be permanently removed.',
+      confirmLabel: 'Delete',
+      danger: true,
     );
     if (ok == true && inv.id != null) {
       await ref.read(invoiceProvider.notifier).deleteInvoice(inv.id!);
@@ -376,11 +372,12 @@ class _Event {
 class _IconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _IconBtn({required this.icon, required this.onTap});
+  final String? tooltip;
+  const _IconBtn({required this.icon, required this.onTap, this.tooltip});
   @override
   Widget build(BuildContext context) {
     final p = AppColors.of(context);
-    return Material(
+    final button = Material(
       color: p.surface,
       borderRadius: BorderRadius.circular(AppRadii.button),
       child: InkWell(
@@ -397,6 +394,7 @@ class _IconBtn extends StatelessWidget {
         ),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 

@@ -58,6 +58,7 @@ class _DesktopTaxReportState extends ConsumerState<DesktopTaxReport> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.chevron_left, size: 20),
+                    tooltip: 'Previous year',
                     onPressed: () => setState(() => _year--),
                   ),
                   Text(
@@ -66,6 +67,7 @@ class _DesktopTaxReportState extends ConsumerState<DesktopTaxReport> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right, size: 20),
+                    tooltip: 'Next year',
                     onPressed: _year >= now.year
                         ? null
                         : () => setState(() => _year++),
