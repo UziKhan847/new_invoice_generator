@@ -5,9 +5,13 @@ import 'package:new_invoice_generator/desktop/charts.dart';
 import 'package:new_invoice_generator/desktop/customers.dart';
 import 'package:new_invoice_generator/desktop/dashboard.dart';
 import 'package:new_invoice_generator/desktop/dialogs.dart';
+import 'package:new_invoice_generator/desktop/employees.dart';
+import 'package:new_invoice_generator/desktop/expenses.dart';
 import 'package:new_invoice_generator/desktop/guide.dart';
 import 'package:new_invoice_generator/desktop/invoice/invoices.dart';
 import 'package:new_invoice_generator/desktop/overview.dart';
+import 'package:new_invoice_generator/desktop/recurring_invoices.dart';
+import 'package:new_invoice_generator/desktop/services.dart';
 import 'package:new_invoice_generator/desktop/settings.dart';
 import 'package:new_invoice_generator/desktop/shortcuts.dart';
 import 'package:new_invoice_generator/desktop/tax_report.dart';
@@ -16,8 +20,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/home_analytics.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
+import 'package:new_invoice_generator/providers/employee.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/providers/recurring_invoice.dart';
+import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 
 /// Which top-level desktop section is showing.
@@ -35,11 +42,23 @@ final desktopNavProvider = NotifierProvider<DesktopNavNotifier, int>(
 class DesktopShell extends ConsumerWidget {
   const DesktopShell({super.key});
 
-  // Sections, in sidebar order. Each maps to a content widget.
+  // Sections, in sidebar order. Each maps to a content widget. Record-type
+  // sections (Invoices..Expenses) come first, insight sections (Dashboard..
+  // Tax Report) after — Services/Employees/Recurring/Expenses used to be
+  // buried under Settings, but desktop has the horizontal space to show
+  // them directly.
   static const _sections = [
     _NavItem('Overview', Icons.home_outlined, Icons.home),
     _NavItem('Invoices', Icons.receipt_long_outlined, Icons.receipt_long),
     _NavItem('Customers', Icons.people_outline, Icons.people),
+    _NavItem('Services', Icons.design_services_outlined, Icons.design_services),
+    _NavItem('Employees', Icons.badge_outlined, Icons.badge),
+    _NavItem('Recurring Invoices', Icons.repeat_outlined, Icons.repeat),
+    _NavItem(
+      'Expenses',
+      Icons.account_balance_wallet_outlined,
+      Icons.account_balance_wallet,
+    ),
     _NavItem('Dashboard', Icons.dashboard_outlined, Icons.dashboard),
     _NavItem('Charts', Icons.bar_chart_outlined, Icons.bar_chart),
     _NavItem(
@@ -53,12 +72,17 @@ class DesktopShell extends ConsumerWidget {
     DesktopOverview(),
     DesktopInvoices(),
     DesktopCustomers(),
+    DesktopServices(),
+    DesktopEmployees(),
+    DesktopRecurringInvoices(),
+    DesktopExpenses(),
     DesktopDashboard(),
     DesktopCharts(),
     DesktopTaxReport(),
   ];
 
-  // Ctrl/Cmd+1..6 jump straight to a section, matching _sections' order.
+  // Ctrl/Cmd+1..9 then +0 jump straight to a section, matching _sections'
+  // order (0 maps to the 10th/last section, as on a physical keyboard row).
   static const _sectionKeys = [
     LogicalKeyboardKey.digit1,
     LogicalKeyboardKey.digit2,
@@ -66,6 +90,10 @@ class DesktopShell extends ConsumerWidget {
     LogicalKeyboardKey.digit4,
     LogicalKeyboardKey.digit5,
     LogicalKeyboardKey.digit6,
+    LogicalKeyboardKey.digit7,
+    LogicalKeyboardKey.digit8,
+    LogicalKeyboardKey.digit9,
+    LogicalKeyboardKey.digit0,
   ];
 
   void _refreshSection(WidgetRef ref, int index) {
@@ -77,10 +105,18 @@ class DesktopShell extends ConsumerWidget {
         ref.invalidate(invoiceProvider);
       case 2: // Customers
         ref.invalidate(customerProvider);
-      case 3: // Dashboard
-      case 4: // Charts
+      case 3: // Services
+        ref.invalidate(serviceProvider);
+      case 4: // Employees
+        ref.invalidate(employeeProvider);
+      case 5: // Recurring Invoices
+        ref.invalidate(recurringInvoiceProvider);
+      case 6: // Expenses
+        ref.invalidate(expenseProvider);
+      case 7: // Dashboard
+      case 8: // Charts
         ref.invalidate(homeAnalyticsProvider);
-      case 5: // Tax Report
+      case 9: // Tax Report
         ref.invalidate(invoiceProvider);
         ref.invalidate(expenseProvider);
     }

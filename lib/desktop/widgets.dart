@@ -359,3 +359,27 @@ class DesktopPrimaryButton extends StatelessWidget {
     );
   }
 }
+
+/// Wraps an existing mobile screen so it renders cleanly inside a desktop
+/// content pane. A nested [Navigator] gives it a fresh routing root, so its
+/// own AppBar shows no spurious back arrow (it can't pop past this
+/// boundary), and any dialogs/sheets it opens still work.
+class EmbeddedMobileSection extends StatelessWidget {
+  final Widget child;
+  const EmbeddedMobileSection({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppColors.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: Container(
+        color: p.surface,
+        child: Navigator(
+          onGenerateRoute: (settings) =>
+              MaterialPageRoute(settings: settings, builder: (_) => child),
+        ),
+      ),
+    );
+  }
+}

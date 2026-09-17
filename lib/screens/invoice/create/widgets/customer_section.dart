@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/invoice_form_helpers.dart';
+import 'package:new_invoice_generator/widgets/add_customer_dialog.dart';
 
 class CustomerSection extends ConsumerWidget {
   final String? selectedId;
@@ -33,6 +34,18 @@ class CustomerSection extends ConsumerWidget {
 
         return SectionCard(
           title: 'Customer',
+          trailing: TextButton.icon(
+            onPressed: () async {
+              final created = await showAddCustomerSheet(context);
+              if (created != null) onChanged(created);
+            },
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('Add new'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

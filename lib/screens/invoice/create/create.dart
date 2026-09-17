@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:new_invoice_generator/app_theme.dart';
+import 'package:new_invoice_generator/desktop/widgets.dart';
 import 'package:new_invoice_generator/models/address.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/employee.dart';
@@ -8,6 +10,7 @@ import 'package:new_invoice_generator/models/invoice/item.dart';
 import 'package:new_invoice_generator/models/tax_mode.dart';
 import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/invoice/invoice.dart';
+import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/add_item_section.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/customer_section.dart';
@@ -231,9 +234,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           senderRole: _employee?.role,
           senderEmail: _employee?.email,
           clearSender: _employee == null,
-          notes: _notesCtrl.text.trim().isEmpty
-              ? null
-              : _notesCtrl.text.trim(),
+          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
           clearNotes: _notesCtrl.text.trim().isEmpty,
           taxRate: _taxRate(company),
           taxLabel: _taxLabel(company),
@@ -337,189 +338,298 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
 
     final isEditing = widget.editingInvoice != null;
-    return Scaffold(
-      appBar: AppBar(
+    final title = isEditing
+        ? 'Edit Invoice'
+        : widget.prefill != null
+        ? 'Duplicate Invoice'
+        : 'Create Invoice';
+
+    // Sections built once and arranged differently below — a single long
+    // column on mobile, two independently-scrolling columns on desktop
+    // (desktop has the horizontal space; the old single-column layout just
+    // stretched every field edge-to-edge and forced scrolling to reach Save).
+    final customerSection = CustomerSection(
+      selectedId: _customerId,
+      onChanged: (Customer? c) => setState(() {
+        _customerId = c?.id;
+        _customerName = c?.name;
+        _customerEmail = c?.email;
+        _customerPhone = c?.phone;
+        _customerAddress = c?.address ?? const Address();
+      }),
+    );
+
+    final senderSection = SenderSection(
+      selected: _employee,
+      onChanged: (e) => setState(() => _employee = e),
+    );
+
+    final issueDateCard = Card(
+      child: ListTile(
+        leading: const Icon(Icons.event_outlined),
+        title: const Text('Issue date'),
+        subtitle: Text(_issueDate.toLocal().toString().split(' ')[0]),
+        trailing: const Icon(Icons.edit_calendar_outlined, size: 18),
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: _issueDate,
+            // Allow back-dating up to 5 years, and future-dating 1 year
+            firstDate: DateTime(DateTime.now().year - 5),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+          );
+          if (picked != null && mounted) {
+            setState(() {
+              _issueDate = picked;
+              // If due date is now before issue date, clear it
+              if (_dueDate != null && _dueDate!.isBefore(picked)) {
+                _dueDate = null;
+              }
+            });
+          }
+        },
+      ),
+    );
+
+    final dueDateCard = Card(
+      child: ListTile(
+        leading: const Icon(Icons.calendar_today_outlined),
         title: Text(
-          isEditing
-              ? 'Edit Invoice'
-              : widget.prefill != null
-              ? 'Duplicate Invoice'
-              : 'Create Invoice',
+          _dueDate == null
+              ? 'Set due date (optional)'
+              : 'Due: ${_dueDate!.toLocal().toString().split(' ')[0]}',
+        ),
+        trailing: _dueDate != null
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => _dueDate = null),
+              )
+            : null,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: _dueDate ?? _issueDate.add(const Duration(days: 30)),
+            // Due date can't be before the issue date
+            firstDate: _issueDate,
+            lastDate: _issueDate.add(const Duration(days: 730)),
+          );
+          if (picked != null && mounted) {
+            setState(() => _dueDate = picked);
+          }
+        },
+      ),
+    );
+
+    final quickAddSection = QuickAddSection(
+      services: services,
+      onAdd: (item) => setState(() => _items.add(item)),
+    );
+
+    final addItemSection = AddItemSection(
+      onAdd: (item) => setState(() => _items.add(item)),
+    );
+
+    final itemsSummarySection = ItemsSummarySection(
+      items: _items,
+      taxLabel: _taxLabel(company),
+      taxableSubtotal: _taxableSubtotal,
+      totalDiscounts: _totalDiscounts,
+      subtotal: _subtotal,
+      tax: _tax(company),
+      total: _total(company),
+      onRemove: (item) => setState(() => _items.remove(item)),
+    );
+
+    final taxModeCard = _TaxModeCard(
+      mode: _taxMode,
+      company: company,
+      effectiveRate: _taxRate(company),
+      effectiveLabel: _taxLabel(company),
+      customRateCtrl: _customTaxRateCtrl,
+      customLabelCtrl: _customTaxLabelCtrl,
+      onModeChanged: (m) => setState(() => _taxMode = m),
+      onCustomChanged: () => setState(() {}),
+    );
+
+    final paymentMethodSection = PaymentMethodSection(
+      selected: _paymentMethod,
+      senderEmail: _employee?.email,
+      stripeLink: _stripeLinkCtrl.text,
+      stripeLinkCtrl: _stripeLinkCtrl,
+      onMethodChanged: (m) => setState(() => _paymentMethod = m),
+    );
+
+    final privateToggleCard = Card(
+      child: SwitchListTile(
+        value: _isPrivate,
+        onChanged: (v) => setState(() => _isPrivate = v),
+        secondary: Icon(
+          Icons.lock_outline,
+          color: _isPrivate
+              ? Colors.purple
+              : Theme.of(context).colorScheme.onSurface.withAlpha(120),
+        ),
+        title: const Text('Private Invoice'),
+        subtitle: Text(
+          _isPrivate
+              ? 'Excluded from tax reports, analytics, and totals.'
+              : 'Standard invoice — included in all reports.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+          ),
         ),
       ),
+    );
+
+    final notesSection = SectionCard(
+      title: 'Notes & Custom Comments',
+      child: TextField(
+        controller: _notesCtrl,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          hintText:
+              'Add any custom comments, payment terms, or messages to show on the invoice.',
+          border: InputBorder.none,
+          isDense: true,
+        ),
+      ),
+    );
+
+    final saveButtonLabel = _saving ? 'Saving…' : 'Save Invoice';
+
+    final useDesktop =
+        ref.watch(layoutModeProvider).isDesktop && deviceAllowsDesktop(context);
+
+    if (useDesktop) {
+      final p = AppColors.of(context);
+      return Scaffold(
+        backgroundColor: p.background,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DesktopTopBar(
+                leading: _DesktopBackBtn(
+                  onTap: () => Navigator.maybePop(context),
+                ),
+                title: title,
+                actions: [
+                  FilledButton.icon(
+                    onPressed: _saving ? null : () => _save(company),
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check, size: 18),
+                    label: Text(saveButtonLabel),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1400),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Left: who / when / how ──────────────────
+                          Expanded(
+                            flex: 5,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  customerSection,
+                                  const SizedBox(height: 12),
+                                  senderSection,
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: issueDateCard),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: dueDateCard),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  paymentMethodSection,
+                                  const SizedBox(height: 12),
+                                  privateToggleCard,
+                                  const SizedBox(height: 12),
+                                  notesSection,
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          // ── Right: what / how much ──────────────────
+                          Expanded(
+                            flex: 4,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  quickAddSection,
+                                  if (services.isNotEmpty)
+                                    const SizedBox(height: 12),
+                                  addItemSection,
+                                  const SizedBox(height: 12),
+                                  itemsSummarySection,
+                                  if (_items.isNotEmpty)
+                                    const SizedBox(height: 12),
+                                  taxModeCard,
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Customer ─────────────────────────────────────────────
-          CustomerSection(
-            selectedId: _customerId,
-            onChanged: (Customer? c) => setState(() {
-              _customerId = c?.id;
-              _customerName = c?.name;
-              _customerEmail = c?.email;
-              _customerPhone = c?.phone;
-              _customerAddress = c?.address ?? const Address();
-            }),
-          ),
+          customerSection,
           const SizedBox(height: 12),
-
-          // ── Sender ───────────────────────────────────────────────
-          SenderSection(
-            selected: _employee,
-            onChanged: (e) => setState(() => _employee = e),
-          ),
+          senderSection,
           const SizedBox(height: 12),
-
-          // ── Issue date (can be back-dated) ───────────────────────
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_outlined),
-              title: const Text('Issue date'),
-              subtitle: Text(_issueDate.toLocal().toString().split(' ')[0]),
-              trailing: const Icon(Icons.edit_calendar_outlined, size: 18),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _issueDate,
-                  // Allow back-dating up to 5 years, and future-dating 1 year
-                  firstDate: DateTime(DateTime.now().year - 5),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null && mounted) {
-                  setState(() {
-                    _issueDate = picked;
-                    // If due date is now before issue date, clear it
-                    if (_dueDate != null && _dueDate!.isBefore(picked)) {
-                      _dueDate = null;
-                    }
-                  });
-                }
-              },
-            ),
-          ),
+          issueDateCard,
           const SizedBox(height: 12),
-
-          // ── Due date ─────────────────────────────────────────────
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.calendar_today_outlined),
-              title: Text(
-                _dueDate == null
-                    ? 'Set due date (optional)'
-                    : 'Due: ${_dueDate!.toLocal().toString().split(' ')[0]}',
-              ),
-              trailing: _dueDate != null
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() => _dueDate = null),
-                    )
-                  : null,
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate:
-                      _dueDate ?? _issueDate.add(const Duration(days: 30)),
-                  // Due date can't be before the issue date
-                  firstDate: _issueDate,
-                  lastDate: _issueDate.add(const Duration(days: 730)),
-                );
-                if (picked != null && mounted) {
-                  setState(() => _dueDate = picked);
-                }
-              },
-            ),
-          ),
+          dueDateCard,
           const SizedBox(height: 12),
-
-          // ── Quick-add services ────────────────────────────────────
-          QuickAddSection(
-            services: services,
-            onAdd: (item) => setState(() => _items.add(item)),
-          ),
+          quickAddSection,
           if (services.isNotEmpty) const SizedBox(height: 12),
-
-          // ── Manual item entry ─────────────────────────────────────
-          AddItemSection(onAdd: (item) => setState(() => _items.add(item))),
+          addItemSection,
           const SizedBox(height: 12),
-
-          // ── Items list + totals ───────────────────────────────────
-          ItemsSummarySection(
-            items: _items,
-            taxLabel: _taxLabel(company),
-            taxableSubtotal: _taxableSubtotal,
-            totalDiscounts: _totalDiscounts,
-            subtotal: _subtotal,
-            tax: _tax(company),
-            total: _total(company),
-            onRemove: (item) => setState(() => _items.remove(item)),
-          ),
+          itemsSummarySection,
           if (_items.isNotEmpty) const SizedBox(height: 12),
-
-          // ── Tax mode ──────────────────────────────────────────────
-          _TaxModeCard(
-            mode: _taxMode,
-            company: company,
-            effectiveRate: _taxRate(company),
-            effectiveLabel: _taxLabel(company),
-            customRateCtrl: _customTaxRateCtrl,
-            customLabelCtrl: _customTaxLabelCtrl,
-            onModeChanged: (m) => setState(() => _taxMode = m),
-            onCustomChanged: () => setState(() {}),
-          ),
+          taxModeCard,
           const SizedBox(height: 12),
-
-          // ── Payment method ────────────────────────────────────────
-          PaymentMethodSection(
-            selected: _paymentMethod,
-            senderEmail: _employee?.email,
-            stripeLink: _stripeLinkCtrl.text,
-            stripeLinkCtrl: _stripeLinkCtrl,
-            onMethodChanged: (m) => setState(() => _paymentMethod = m),
-          ),
+          paymentMethodSection,
           const SizedBox(height: 12),
-
-          // ── Private invoice toggle ───────────────────────────────
-          Card(
-            child: SwitchListTile(
-              value: _isPrivate,
-              onChanged: (v) => setState(() => _isPrivate = v),
-              secondary: Icon(
-                Icons.lock_outline,
-                color: _isPrivate
-                    ? Colors.purple
-                    : Theme.of(context).colorScheme.onSurface.withAlpha(120),
-              ),
-              title: const Text('Private Invoice'),
-              subtitle: Text(
-                _isPrivate
-                    ? 'Excluded from tax reports, analytics, and totals.'
-                    : 'Standard invoice — included in all reports.',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-                ),
-              ),
-            ),
-          ),
+          privateToggleCard,
           const SizedBox(height: 12),
-
-          // ── Notes / payment terms ─────────────────────────────────
-          SectionCard(
-            title: 'Notes & Custom Comments',
-            child: TextField(
-              controller: _notesCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText:
-                    'Add any custom comments, payment terms, or messages to show on the invoice.',
-                border: InputBorder.none,
-                isDense: true,
-              ),
-            ),
-          ),
+          notesSection,
           const SizedBox(height: 24),
-
-          // ── Save ──────────────────────────────────────────────────
           ElevatedButton(
             onPressed: _saving ? null : () => _save(company),
             style: ElevatedButton.styleFrom(
@@ -535,6 +645,35 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           const SizedBox(height: 40),
         ],
+      ),
+    );
+  }
+}
+
+class _DesktopBackBtn extends StatelessWidget {
+  final VoidCallback onTap;
+  const _DesktopBackBtn({required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final p = AppColors.of(context);
+    return Tooltip(
+      message: 'Back',
+      child: Material(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(AppRadii.button),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadii.button),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.button),
+              border: Border.all(color: p.cardBorder),
+            ),
+            child: Icon(Icons.arrow_back, size: 20, color: p.ink),
+          ),
+        ),
       ),
     );
   }
@@ -561,7 +700,6 @@ class _TaxModeCard extends StatelessWidget {
     required this.onModeChanged,
     required this.onCustomChanged,
   });
-
 
   @override
   Widget build(BuildContext context) {

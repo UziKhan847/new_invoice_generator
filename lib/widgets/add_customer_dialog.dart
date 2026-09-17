@@ -61,8 +61,9 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
     setState(() => _loading = true);
     try {
       final notifier = ref.read(customerProvider.notifier);
+      Customer saved;
       if (widget.existing == null) {
-        await notifier.addCustomer(
+        saved = await notifier.addCustomer(
           Customer(
             id: '',
             name: _name.text.trim(),
@@ -73,17 +74,18 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
           ),
         );
       } else {
-        await notifier.updateCustomer(
-          widget.existing!.copyWith(
-            name: _name.text.trim(),
-            email: _email.text.trim(),
-            phone: _phone,
-            address: _address,
-            tags: _tags,
-          ),
+        saved = widget.existing!.copyWith(
+          name: _name.text.trim(),
+          email: _email.text.trim(),
+          phone: _phone,
+          address: _address,
+          tags: _tags,
         );
+        await notifier.updateCustomer(saved);
       }
-      if (mounted) Navigator.pop(context);
+      // Hands the saved customer back to callers that want to auto-select
+      // it (e.g. adding a customer inline while creating an invoice).
+      if (mounted) Navigator.pop(context, saved);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -217,9 +219,12 @@ class _AddCustomerSheetState extends ConsumerState<AddCustomerSheet> {
 /// 1440px window is a mobile idiom that reads oddly on desktop, and a
 /// centered dialog also gets Escape-to-dismiss "for free" via showDialog's
 /// default barrierDismissible.
-Future<void> showAddCustomerSheet(BuildContext context, {Customer? existing}) {
+Future<Customer?> showAddCustomerSheet(
+  BuildContext context, {
+  Customer? existing,
+}) {
   if (isDesktopPlatform) {
-    return showDialog(
+    return showDialog<Customer>(
       context: context,
       builder: (_) => Dialog(
         child: ConstrainedBox(
@@ -229,7 +234,7 @@ Future<void> showAddCustomerSheet(BuildContext context, {Customer? existing}) {
       ),
     );
   }
-  return showModalBottomSheet(
+  return showModalBottomSheet<Customer>(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(

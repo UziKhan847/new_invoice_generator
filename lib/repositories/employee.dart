@@ -11,8 +11,13 @@ class EmployeeRepository {
     return response.map<Employee>((j) => Employee.fromJson(j)).toList();
   }
 
-  Future<void> add(Employee e, String companyId) async {
-    await supabase.from('employees').insert(e.toInsertMap(companyId));
+  Future<Employee> add(Employee e, String companyId) async {
+    final row = await supabase
+        .from('employees')
+        .insert(e.toInsertMap(companyId))
+        .select()
+        .single();
+    return Employee.fromJson(row);
   }
 
   Future<void> update(Employee e) async {

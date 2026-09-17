@@ -1,9 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:new_invoice_generator/models/customer.dart';
 import 'package:new_invoice_generator/models/invoice/invoice.dart';
 import 'package:new_invoice_generator/services/pdf.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -147,23 +148,26 @@ class DownloadService {
     required String fileName,
   }) async {
     try {
-      // Building '$HOME/Documents' (or USERPROFILE) by hand produces
-      // "C:\Users\x/Documents" on Windows and breaks entirely when Documents
-      // is redirected (OneDrive) or localized. getApplicationDocumentsDirectory
-      // resolves the platform's real Documents folder correctly everywhere.
-      final docs = await getApplicationDocumentsDirectory();
-      final dir = Directory('${docs.path}/Invoices');
-      if (!await dir.exists()) await dir.create(recursive: true);
+      // Traditional desktop-app behaviour: let the user pick where to save
+      // via the OS's native file dialog, instead of silently writing to a
+      // fixed Documents/Invoices folder they may not think to look in.
+      final savedUri = await FilePicker.saveFile(
+        dialogTitle: 'Save invoice PDF',
+        fileName: '$fileName.pdf',
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+        bytes: Uint8List.fromList(bytes),
+      );
 
-      final filePath = '${dir.path}/$fileName.pdf';
-      await File(filePath).writeAsBytes(bytes);
+      // A null result means the user cancelled the dialog — nothing to do.
+      if (savedUri == null) return;
 
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
           ..showSnackBar(
             SnackBar(
-              content: Text('Saved to Documents/Invoices/$fileName.pdf'),
+              content: Text('Saved $fileName.pdf'),
               duration: const Duration(seconds: 4),
             ),
           );

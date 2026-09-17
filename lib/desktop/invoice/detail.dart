@@ -14,16 +14,37 @@ import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
 import 'package:new_invoice_generator/services/download.dart';
+import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:new_invoice_generator/services/receipt_pdf.dart';
 
 /// Full desktop invoice viewer: the document on the left, a status + activity
 /// rail on the right. Pushed as its own route.
-class DesktopInvoiceDetail extends ConsumerWidget {
+class DesktopInvoiceDetail extends ConsumerStatefulWidget {
   final String invoiceId;
   const DesktopInvoiceDetail({super.key, required this.invoiceId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopInvoiceDetail> createState() =>
+      _DesktopInvoiceDetailState();
+}
+
+class _DesktopInvoiceDetailState extends ConsumerState<DesktopInvoiceDetail> {
+  // A bare Scrollbar has no ScrollPosition to attach to unless it's given a
+  // controller wired to the actual scrollable — without one this crashes on
+  // the very first frame (worse on desktop, where IndexedStack builds every
+  // shell section immediately, so any page reachable from one that crashes
+  // this way takes the whole app down on launch).
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final invoiceId = widget.invoiceId;
     final p = AppColors.of(context);
     final invoicesAsync = ref.watch(invoiceProvider);
 
@@ -83,8 +104,10 @@ class DesktopInvoiceDetail extends ConsumerWidget {
                 ),
                 Expanded(
                   child: Scrollbar(
+                    controller: _scrollController,
                     thumbVisibility: true,
                     child: SingleChildScrollView(
+                      controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,6 +178,13 @@ class DesktopInvoiceDetail extends ConsumerWidget {
                                     company: company,
                                     customer: customer,
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                _RailButton(
+                                  icon: Icons.print_outlined,
+                                  label: 'Print',
+                                  onTap: () =>
+                                      PdfService.generateInvoicePdf(inv),
                                 ),
                                 const SizedBox(height: 8),
                                 _RailButton(

@@ -31,31 +31,35 @@ class ItemsSummarySection extends StatelessWidget {
       title: 'Items',
       child: Column(
         children: [
-          ...items.map((item) => _ItemRow(
-                item: item,
-                onRemove: () => onRemove(item),
-              )),
+          ...items.map(
+            (item) => _ItemRow(item: item, onRemove: () => onRemove(item)),
+          ),
           const Divider(height: 20),
           TotalLine(
-              label: 'Pre-discount Subtotal',
-              value: '\$${taxableSubtotal.toStringAsFixed(2)}'),
+            label: 'Pre-discount Subtotal',
+            value: '\$${taxableSubtotal.toStringAsFixed(2)}',
+          ),
           if (totalDiscounts > 0) ...[
             TotalLine(
-                label: 'Total Discounts',
-                value: '−\$${totalDiscounts.toStringAsFixed(2)}',
-                color: Colors.green),
+              label: 'Total Discounts',
+              value: '−\$${totalDiscounts.toStringAsFixed(2)}',
+              color: Colors.green,
+            ),
             TotalLine(
-                label: 'After discounts',
-                value: '\$${subtotal.toStringAsFixed(2)}'),
+              label: 'After discounts',
+              value: '\$${subtotal.toStringAsFixed(2)}',
+            ),
           ],
           TotalLine(
-              label: '$taxLabel on \$${taxableSubtotal.toStringAsFixed(2)}',
-              value: '\$${tax.toStringAsFixed(2)}'),
+            label: '$taxLabel on \$${taxableSubtotal.toStringAsFixed(2)}',
+            value: '\$${tax.toStringAsFixed(2)}',
+          ),
           const SizedBox(height: 4),
           TotalLine(
-              label: 'Total',
-              value: '\$${total.toStringAsFixed(2)}',
-              bold: true),
+            label: 'Total',
+            value: '\$${total.toStringAsFixed(2)}',
+            bold: true,
+          ),
         ],
       ),
     );
@@ -79,22 +83,25 @@ class _ItemRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.description,
-                    style:
-                        const TextStyle(fontWeight: FontWeight.w500)),
+                Text(
+                  item.description,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
                 Text(
                   'x${item.quantityDisplay}  ×  \$${item.unitPrice.toStringAsFixed(2)}',
                   style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurface.withAlpha(150)),
+                    fontSize: 12,
+                    color: cs.onSurface.withAlpha(150),
+                  ),
                 ),
                 if (item.hasDiscount)
                   Text(
                     '− ${item.discountLabel}  (−\$${item.discountAmount.toStringAsFixed(2)})',
                     style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500),
+                      fontSize: 11,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
               ],
             ),
@@ -107,18 +114,23 @@ class _ItemRow extends StatelessWidget {
                 Text(
                   '\$${item.subtotal.toStringAsFixed(2)}',
                   style: TextStyle(
-                      fontSize: 11,
-                      color: cs.onSurface.withAlpha(120),
-                      decoration: TextDecoration.lineThrough),
+                    fontSize: 11,
+                    color: cs.onSurface.withAlpha(120),
+                    decoration: TextDecoration.lineThrough,
+                  ),
                 ),
-              Text('\$${item.total.toStringAsFixed(2)}',
-                  style:
-                      const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                '\$${item.total.toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.remove_circle_outline,
-                size: 18, color: Colors.red),
+            icon: const Icon(
+              Icons.remove_circle_outline,
+              size: 18,
+              color: Colors.red,
+            ),
             onPressed: onRemove,
             padding: const EdgeInsets.only(left: 4),
             constraints: const BoxConstraints(),

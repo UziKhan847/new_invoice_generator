@@ -17,12 +17,22 @@ import 'package:new_invoice_generator/screens/invoice/create/create.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/email_dialog.dart';
 import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.dart';
 import 'package:new_invoice_generator/services/download.dart';
+import 'package:new_invoice_generator/services/pdf.dart';
 
 /// Filter for the invoice list.
 enum InvoiceFilter { all, paid, unpaid }
 
 /// Actions available from an invoice row's right-click context menu.
-enum _RowAction { open, edit, duplicate, markPaid, email, download, delete }
+enum _RowAction {
+  open,
+  edit,
+  duplicate,
+  markPaid,
+  email,
+  download,
+  print,
+  delete,
+}
 
 /// Currently selected invoice id in the desktop master-detail view (null = none).
 class SelectedInvoiceNotifier extends Notifier<String?> {
@@ -135,6 +145,8 @@ class _DesktopInvoicesState extends ConsumerState<DesktopInvoices> {
           company: company,
           customer: _resolveCustomer(inv.customerId),
         );
+      case _RowAction.print:
+        await PdfService.generateInvoicePdf(inv);
       case _RowAction.delete:
         final ok = await confirmDialog(
           context,
@@ -450,6 +462,7 @@ class _InvoiceListItem extends StatelessWidget {
           value: _RowAction.download,
           child: Text('Download PDF'),
         ),
+        const PopupMenuItem(value: _RowAction.print, child: Text('Print')),
         const PopupMenuDivider(),
         const PopupMenuItem(
           value: _RowAction.delete,
@@ -534,12 +547,40 @@ class _InvoiceListItem extends StatelessWidget {
   }
 }
 
-class _PreviewPane extends ConsumerWidget {
+class _PreviewPane extends ConsumerStatefulWidget {
   final Invoice invoice;
   const _PreviewPane({required this.invoice});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PreviewPane> createState() => _PreviewPaneState();
+}
+
+class _PreviewPaneState extends ConsumerState<_PreviewPane> {
+  // A bare Scrollbar has no ScrollPosition to attach to unless it's given a
+  // controller wired to the actual scrollable — without one this crashes on
+  // the very first frame (worse on desktop, where IndexedStack builds every
+  // section, including this one, immediately regardless of which is shown).
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_PreviewPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Jump back to the top when the user selects a different invoice.
+    if (oldWidget.invoice.id != widget.invoice.id &&
+        _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final invoice = widget.invoice;
     final p = AppColors.of(context);
     final company = ref.watch(companyProvider).asData?.value;
     final customer = _resolveCustomer(ref, invoice.customerId);
@@ -610,8 +651,10 @@ class _PreviewPane extends ConsumerWidget {
         const SizedBox(height: 14),
         Expanded(
           child: Scrollbar(
+            controller: _scrollController,
             thumbVisibility: true,
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: SelectionArea(
                 child: InvoiceDocumentView(
                   invoice: invoice,

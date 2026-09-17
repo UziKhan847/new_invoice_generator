@@ -12,11 +12,12 @@ class EmployeeNotifier extends AsyncNotifier<List<Employee>> {
     return _repo.fetchAll(company['id'] as String);
   }
 
-  Future<void> add(Employee e) async {
+  Future<Employee> add(Employee e) async {
     final company = await ref.read(companyProvider.future);
-    await _repo.add(e, company['id'] as String);
+    final created = await _repo.add(e, company['id'] as String);
     ref.invalidateSelf();
     await future;
+    return created;
   }
 
   // No state = AsyncData(...) — use invalidateSelf instead
@@ -35,5 +36,5 @@ class EmployeeNotifier extends AsyncNotifier<List<Employee>> {
 
 final employeeProvider =
     AsyncNotifierProvider<EmployeeNotifier, List<Employee>>(
-  EmployeeNotifier.new,
-);
+      EmployeeNotifier.new,
+    );

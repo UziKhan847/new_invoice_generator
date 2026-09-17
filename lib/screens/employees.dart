@@ -139,7 +139,7 @@ class EmployeesScreen extends ConsumerWidget {
                       visualDensity: VisualDensity.compact,
                       onPressed: () => showDialog(
                         context: context,
-                        builder: (_) => _EmployeeDialog(employee: e),
+                        builder: (_) => EmployeeDialog(employee: e),
                       ),
                     ),
                     IconButton(
@@ -186,7 +186,7 @@ class EmployeesScreen extends ConsumerWidget {
         heroTag: 'employees_fab',
         onPressed: () => showDialog(
           context: context,
-          builder: (_) => const _EmployeeDialog(),
+          builder: (_) => const EmployeeDialog(),
         ),
         backgroundColor: AppColors.of(context).primary,
         foregroundColor: Colors.white,
@@ -196,15 +196,15 @@ class EmployeesScreen extends ConsumerWidget {
   }
 }
 
-class _EmployeeDialog extends ConsumerStatefulWidget {
+class EmployeeDialog extends ConsumerStatefulWidget {
   final Employee? employee;
-  const _EmployeeDialog({this.employee});
+  const EmployeeDialog({super.key, this.employee});
 
   @override
-  ConsumerState<_EmployeeDialog> createState() => _EmployeeDialogState();
+  ConsumerState<EmployeeDialog> createState() => _EmployeeDialogState();
 }
 
-class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
+class _EmployeeDialogState extends ConsumerState<EmployeeDialog> {
   late final TextEditingController _name;
   late final TextEditingController _role;
   late final TextEditingController _email;
@@ -286,12 +286,17 @@ class _EmployeeDialogState extends ConsumerState<_EmployeeDialog> {
                       email: _email.text.trim(),
                       phone: _phone.isEmpty ? null : _phone,
                     );
+                    Employee saved;
                     if (isEdit) {
                       await ref.read(employeeProvider.notifier).save(e);
+                      saved = e;
                     } else {
-                      await ref.read(employeeProvider.notifier).add(e);
+                      saved = await ref.read(employeeProvider.notifier).add(e);
                     }
-                    if (context.mounted) Navigator.pop(context);
+                    // Hands the saved employee back to callers that want to
+                    // auto-select it (e.g. adding a sender inline while
+                    // creating an invoice).
+                    if (context.mounted) Navigator.pop(context, saved);
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(
@@ -331,4 +336,17 @@ class _FieldLabel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Helper to show [EmployeeDialog] and get back the employee that was
+/// added/edited — e.g. for adding a sender inline while creating an
+/// invoice, without navigating away to the Employees section.
+Future<Employee?> showEmployeeDialog(
+  BuildContext context, {
+  Employee? existing,
+}) {
+  return showDialog<Employee>(
+    context: context,
+    builder: (_) => EmployeeDialog(employee: existing),
+  );
 }

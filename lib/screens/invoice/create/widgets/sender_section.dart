@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/employee.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
+import 'package:new_invoice_generator/screens/employees.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/invoice_form_helpers.dart';
 
 class SenderSection extends ConsumerWidget {
@@ -22,9 +23,34 @@ class SenderSection extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
       data: (employees) {
-        if (employees.isEmpty) return const SizedBox.shrink();
+        final addButton = TextButton.icon(
+          onPressed: () async {
+            final created = await showEmployeeDialog(context);
+            if (created != null) onChanged(created);
+          },
+          icon: const Icon(Icons.add, size: 16),
+          label: const Text('Add new'),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            visualDensity: VisualDensity.compact,
+          ),
+        );
+        // No employees yet — still offer a way to add the first one instead
+        // of hiding the whole section (the old behavior forced a detour to
+        // the Employees section before a sender could ever be set here).
+        if (employees.isEmpty) {
+          return SectionCard(
+            title: 'Sender / Employee',
+            trailing: addButton,
+            child: Text(
+              'No employees yet — add one to set an invoice sender.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          );
+        }
         return SectionCard(
           title: 'Sender / Employee',
+          trailing: addButton,
           child: Column(
             children: [
               DropdownButtonFormField<String>(

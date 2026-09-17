@@ -47,16 +47,20 @@ const List<Widget> guideSections = [
     title: 'Creating an Invoice',
     color: Colors.blue,
     steps: [
-      '1. Tap the + button from the Invoices or Home screen.',
-      '2. Select a customer — their email auto-fills for you.',
-      '3. Select the employee (sender) who delivered the service.',
+      '1. Tap the + button from the Invoices or Home screen '
+          '(Desktop: "+ New Invoice" in the top bar, or press Ctrl+N / Cmd+N).',
+      '2. Select a customer — their email auto-fills for you. '
+          'Don\'t see them yet? Tap "Add new" right next to the Customer field '
+          'to create one without leaving this screen.',
+      '3. Select the employee (sender) who delivered the service — same '
+          '"Add new" shortcut works here too if they\'re not listed yet.',
       '4. Add items by typing a description, quantity, and price.',
       '   Tip: tap a Service chip to quick-add a preset service.',
       '5. Use decimal quantities for partial hours/weeks (e.g. 3.5).',
       '6. Add a discount per item if applicable (% or flat \$).',
       '7. Toggle "International" if the customer is outside Canada — tax becomes 0% automatically.',
       '8. Optionally add a Stripe payment link and notes/terms.',
-      '9. Tap Save Invoice.',
+      '9. Tap Save Invoice (Desktop: the Save button is always visible in the top bar).',
     ],
   ),
   GuideSection(
@@ -110,7 +114,8 @@ const List<Widget> guideSections = [
       '',
       'After each Stripe payment:',
       '  1. Check your Stripe Dashboard to see the exact fee charged.',
-      '  2. Go to More → Expenses → + (add new expense).',
+      '  2. Go to Expenses (Mobile: More → Expenses. Desktop: Expenses in '
+          'the sidebar) → + add new expense.',
       '  3. Description: "Stripe fee — Invoice #XXX".',
       '  4. Category: "Professional Services" or "Software & Subscriptions".',
       '  5. Amount: the fee amount.',
@@ -129,7 +134,8 @@ const List<Widget> guideSections = [
       'Canadian customers:',
       '  • Tax is charged automatically based on your province.',
       '  • Ontario = 13% HST, Alberta = 5% GST, etc.',
-      '  • Set your province in More → Company Profile.',
+      '  • Set your province in Company Profile (Mobile: More → Company '
+          'Profile. Desktop: Settings → Company Profile).',
       '',
       'International customers (outside Canada):',
       '  • Toggle "International" when creating the invoice.',
@@ -147,9 +153,14 @@ const List<Widget> guideSections = [
     color: Colors.purple,
     steps: [
       'For students/customers you bill every month:',
-      '  1. Go to More → Recurring Invoices → +.',
+      '  1. Go to Recurring Invoices (Mobile: More → Recurring Invoices. '
+          'Desktop: Recurring Invoices in the sidebar) → +.',
       '  2. Set the customer, service, frequency, and price.',
       '  3. Tap "Generate Now" to instantly create an invoice from the template.',
+      '',
+      'The app also checks for due templates automatically each time you '
+          'open it (at most every 15 minutes), so invoices you\'ve missed '
+          'while the app was closed get caught up without you doing anything.',
       '',
       'Tip: use this for monthly Arabic or Quran class billing. '
           'Takes 2 seconds instead of recreating from scratch each month.',
@@ -161,8 +172,9 @@ const List<Widget> guideSections = [
     color: Colors.indigo,
     steps: [
       'Need to re-bill a customer for the same service?',
-      '  1. Open the existing invoice.',
-      '  2. Scroll down and tap "Duplicate Invoice".',
+      '  1. Open the existing invoice, or right-click it in the list '
+          '(Desktop).',
+      '  2. Tap/select "Duplicate".',
       '  3. A new invoice is created with today\'s date, same items and customer.',
       '  4. Edit as needed before saving.',
       '',
@@ -174,7 +186,8 @@ const List<Widget> guideSections = [
     title: 'Tax Report (for CRA filing)',
     color: Colors.red,
     steps: [
-      'Go to More → Tax Report to see your annual summary.',
+      'Go to Tax Report (Mobile: More → Tax Report. Desktop: Tax Report '
+          'in the sidebar) to see your annual summary.',
       '',
       'The report shows:',
       '  • Total revenue (pre-tax)',
@@ -201,6 +214,49 @@ const List<Widget> guideSections = [
       '',
       'Use the filters (Year, Customer, Sender) to drill down.',
       'Charts auto-update when you add or mark invoices paid.',
+    ],
+  ),
+  GuideSection(
+    icon: Icons.print_outlined,
+    title: 'Printing & Saving Invoices',
+    color: Colors.brown,
+    steps: [
+      'From an invoice\'s menu (or the ⋮ quick actions on the invoice '
+          'list) you can:',
+      '  • Download — saves the invoice as a PDF.',
+      '     Desktop: opens your OS\'s native "Save As" dialog so you '
+          'choose where it goes, just like any other desktop app.',
+      '  • Print — opens the system print dialog directly, without '
+          'saving a file first.',
+      '  • Email — sends the PDF straight to the customer\'s address.',
+      '  • Preview PDF — see exactly what the customer will receive '
+          'before sending.',
+    ],
+  ),
+  GuideSection(
+    icon: Icons.keyboard_alt_outlined,
+    title: 'Desktop: Keyboard Shortcuts & Navigation',
+    color: Colors.deepPurple,
+    steps: [
+      'On Windows, Linux, and macOS, the sidebar holds every section — '
+          'Invoices, Customers, Services, Employees, Recurring Invoices, '
+          'Expenses, Dashboard, Charts, and Tax Report — with Settings '
+          '(Company Profile + Appearance) and "How to Use" at the bottom.',
+      '',
+      'Keyboard shortcuts (Ctrl on Windows/Linux, Cmd on macOS):',
+      '  • Ctrl+N — new invoice',
+      '  • Ctrl+F — jump to the current section\'s search box',
+      '  • Ctrl+P — export/print the selected invoice',
+      '  • Ctrl+R — refresh the current section',
+      '  • Ctrl+1 – Ctrl+9, Ctrl+0 — jump straight to a sidebar section',
+      '  • Ctrl+, — open Settings',
+      '  • Enter — confirm a dialog (e.g. "Delete invoice?")',
+      '  • ↑ / ↓ then Enter — move through and open a selected invoice '
+          'in the Invoices list',
+      '',
+      'Right-click an invoice or customer row for a context menu — '
+          'Edit, Duplicate, Mark as paid, Email, Download, Print, Delete '
+          'are all one right-click away, no need to open the row first.',
     ],
   ),
 ];

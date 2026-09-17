@@ -26,7 +26,10 @@ Future<void> showEmailInvoiceDialog({
                   const SizedBox(width: 6),
                   Text(
                     'Auto-filled from customer',
-                    style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade700,
+                    ),
                   ),
                 ],
               ),

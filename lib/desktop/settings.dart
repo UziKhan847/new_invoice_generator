@@ -6,10 +6,6 @@ import 'package:new_invoice_generator/providers/company.dart';
 import 'package:new_invoice_generator/providers/layout_mode.dart';
 import 'package:new_invoice_generator/providers/theme.dart';
 import 'package:new_invoice_generator/screens/company_profile.dart';
-import 'package:new_invoice_generator/screens/employees.dart';
-import 'package:new_invoice_generator/screens/expense.dart';
-import 'package:new_invoice_generator/screens/recurring_invoices.dart';
-import 'package:new_invoice_generator/screens/services.dart';
 
 /// Which settings section is shown.
 class SettingsSectionNotifier extends Notifier<int> {
@@ -25,12 +21,12 @@ final settingsSectionProvider = NotifierProvider<SettingsSectionNotifier, int>(
 class DesktopSettings extends ConsumerWidget {
   const DesktopSettings({super.key});
 
+  // Services/Employees/Recurring Invoices/Expenses used to live here too,
+  // but they're workflow data, not configuration — they now have their own
+  // sections in the main sidebar (see DesktopShell). Settings is left with
+  // just the two things that actually are settings.
   static const _sections = [
     ('Company Profile', Color(0xFF2C56B5)),
-    ('Services', Color(0xFF7C5CCB)),
-    ('Employees', Color(0xFF157A45)),
-    ('Recurring Invoices', Color(0xFFC29A43)),
-    ('Expenses', Color(0xFFC2453E)),
     ('Appearance', Color(0xFF157A45)),
   ];
 
@@ -119,22 +115,6 @@ class DesktopSettings extends ConsumerWidget {
                     Expanded(
                       child: switch (selected) {
                         0 => const _CompanyProfileSection(),
-                        1 => const _EmbeddedSection(
-                          key: ValueKey('services'),
-                          child: ServicesScreen(),
-                        ),
-                        2 => const _EmbeddedSection(
-                          key: ValueKey('employees'),
-                          child: EmployeesScreen(),
-                        ),
-                        3 => const _EmbeddedSection(
-                          key: ValueKey('recurring'),
-                          child: RecurringInvoicesScreen(),
-                        ),
-                        4 => const _EmbeddedSection(
-                          key: ValueKey('expenses'),
-                          child: ExpensesScreen(),
-                        ),
                         _ => const _AppearanceSection(),
                       },
                     ),
@@ -143,29 +123,6 @@ class DesktopSettings extends ConsumerWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Wraps an existing mobile screen so it renders cleanly inside the content
-/// area. A nested [Navigator] gives it a fresh routing root, so its own AppBar
-/// shows no spurious back arrow (it can't pop past this boundary), and any
-/// dialogs/sheets it opens still work.
-class _EmbeddedSection extends StatelessWidget {
-  final Widget child;
-  const _EmbeddedSection({super.key, required this.child});
-  @override
-  Widget build(BuildContext context) {
-    final p = AppColors.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      child: Container(
-        color: p.surface,
-        child: Navigator(
-          onGenerateRoute: (settings) =>
-              MaterialPageRoute(settings: settings, builder: (_) => child),
         ),
       ),
     );

@@ -9,10 +9,11 @@ import 'package:new_invoice_generator/screens/invoice/widgets/mark_paid_dialog.d
 import 'package:new_invoice_generator/screens/invoice/widgets/quick_pdf_preview.dart';
 import 'package:new_invoice_generator/services/download.dart';
 import 'package:new_invoice_generator/services/email.dart';
+import 'package:new_invoice_generator/services/pdf.dart';
 import 'package:new_invoice_generator/services/sms.dart';
 import 'package:new_invoice_generator/utils/loading_overlay.dart';
 
-enum _Action { markPaid, email, sms, download, preview }
+enum _Action { markPaid, email, sms, download, print, preview }
 
 class InvoiceQuickMenu extends ConsumerWidget {
   final Invoice invoice;
@@ -72,6 +73,19 @@ class InvoiceQuickMenu extends ConsumerWidget {
               },
             );
 
+          case _Action.print:
+            await withLoadingOverlay(
+              context,
+              message: 'Preparing print…',
+              task: () async {
+                final logoUrl = await getLogoUrl();
+                final inv = logoUrl != null
+                    ? invoice.copyWith(companyLogoUrl: logoUrl)
+                    : invoice;
+                await PdfService.generateInvoicePdf(inv);
+              },
+            );
+
           case _Action.sms:
             if (!context.mounted) return;
             await SmsService.sendInvoiceSms(
@@ -128,6 +142,10 @@ class InvoiceQuickMenu extends ConsumerWidget {
         const PopupMenuItem(
           value: _Action.download,
           child: _MenuItem(icon: Icons.download_outlined, label: 'Download'),
+        ),
+        const PopupMenuItem(
+          value: _Action.print,
+          child: _MenuItem(icon: Icons.print_outlined, label: 'Print'),
         ),
         const PopupMenuItem(
           value: _Action.preview,

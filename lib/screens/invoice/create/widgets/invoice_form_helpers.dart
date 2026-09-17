@@ -5,7 +5,16 @@ import 'package:flutter/material.dart';
 class SectionCard extends StatelessWidget {
   final String title;
   final Widget child;
-  const SectionCard({super.key, required this.title, required this.child});
+
+  /// Optional widget shown at the end of the title row (e.g. a "+ Add"
+  /// button to create a customer/employee inline without leaving the form).
+  final Widget? trailing;
+  const SectionCard({
+    super.key,
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,11 +24,18 @@ class SectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                ?trailing,
+              ],
+            ),
             const SizedBox(height: 12),
             child,
           ],

@@ -10,8 +10,13 @@ class CustomerRepository {
         .order('name', ascending: true);
   }
 
-  Future<void> addCustomer(String companyId, Customer c) async {
-    await supabase.from('customers').insert(c.toInsertMap(companyId));
+  Future<Customer> addCustomer(String companyId, Customer c) async {
+    final row = await supabase
+        .from('customers')
+        .insert(c.toInsertMap(companyId))
+        .select()
+        .single();
+    return Customer.fromJson(row);
   }
 
   Future<void> updateCustomer(Customer c) async {
