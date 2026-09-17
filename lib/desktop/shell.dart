@@ -234,74 +234,85 @@ class _Sidebar extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Brand block
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: p.primary,
-                    borderRadius: BorderRadius.circular(10),
+          // Everything above the fixed footer scrolls independently, so a
+          // short window (or many nav items) never clips or overflows the
+          // account chip pinned at the bottom.
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Brand block
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: p.primary,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            initials,
+                            style: AppTypography.title(
+                              Colors.white,
+                            ).copyWith(fontSize: 14),
+                          ),
+                        ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                companyName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.title(
+                                  p.ink,
+                                ).copyWith(fontSize: 14),
+                              ),
+                              Text(
+                                'Invoicing workspace',
+                                style: AppTypography.caption(
+                                  p.textTertiary,
+                                ).copyWith(fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(
-                    initials,
-                    style: AppTypography.title(
-                      Colors.white,
-                    ).copyWith(fontSize: 14),
+
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Text(
+                      'WORKSPACE',
+                      style: AppTypography.label(p.textTertiary),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        companyName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.title(
-                          p.ink,
-                        ).copyWith(fontSize: 14),
-                      ),
-                      Text(
-                        'Invoicing workspace',
-                        style: AppTypography.caption(
-                          p.textTertiary,
-                        ).copyWith(fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+
+                  // Nav items
+                  ...List.generate(DesktopShell._sections.length, (i) {
+                    final s = DesktopShell._sections[i];
+                    final active = i == selected;
+                    final badge = i == 1 && awaiting > 0 ? awaiting : null;
+                    return _SidebarTile(
+                      item: s,
+                      active: active,
+                      badge: badge,
+                      onTap: () =>
+                          ref.read(desktopNavProvider.notifier).select(i),
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              'WORKSPACE',
-              style: AppTypography.label(p.textTertiary),
-            ),
-          ),
-
-          // Nav items
-          ...List.generate(DesktopShell._sections.length, (i) {
-            final s = DesktopShell._sections[i];
-            final active = i == selected;
-            final badge = i == 1 && awaiting > 0 ? awaiting : null;
-            return _SidebarTile(
-              item: s,
-              active: active,
-              badge: badge,
-              onTap: () => ref.read(desktopNavProvider.notifier).select(i),
-            );
-          }),
-
-          const Spacer(),
           Divider(height: 1, color: p.border),
 
           // Help / How to use
