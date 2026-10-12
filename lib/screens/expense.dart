@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:new_invoice_generator/models/expense.dart';
 import 'package:new_invoice_generator/providers/expense.dart';
+import 'package:new_invoice_generator/widgets/spell_check.dart';
 
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
@@ -344,6 +345,8 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
           const SizedBox(height: 16),
 
           TextField(
+            spellCheckConfiguration: freeTextSpellCheck,
+            contextMenuBuilder: spellCheckContextMenu,
             controller: _descCtrl,
             decoration: const InputDecoration(labelText: 'Description *'),
             textCapitalization: TextCapitalization.sentences,
@@ -414,6 +417,8 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
           const SizedBox(height: 10),
 
           TextField(
+            spellCheckConfiguration: freeTextSpellCheck,
+            contextMenuBuilder: spellCheckContextMenu,
             controller: _notesCtrl,
             maxLines: 2,
             decoration: const InputDecoration(

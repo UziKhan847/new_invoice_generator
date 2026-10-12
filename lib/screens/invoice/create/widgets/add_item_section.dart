@@ -3,6 +3,7 @@ import 'package:new_invoice_generator/models/invoice/item.dart';
 import 'package:new_invoice_generator/models/service.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/invoice_form_helpers.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/quick_add_service_dialog.dart';
+import 'package:new_invoice_generator/widgets/spell_check.dart';
 
 class AddItemSection extends StatefulWidget {
   final void Function(InvoiceItem item) onAdd;
@@ -73,6 +74,8 @@ class _AddItemSectionState extends State<AddItemSection> {
       child: Column(
         children: [
           TextField(
+            spellCheckConfiguration: freeTextSpellCheck,
+            contextMenuBuilder: spellCheckContextMenu,
             controller: _descCtrl,
             focusNode: _descFocus,
             textInputAction: TextInputAction.next,

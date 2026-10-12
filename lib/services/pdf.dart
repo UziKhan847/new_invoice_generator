@@ -553,7 +553,7 @@ class PdfService {
                     else ...[
                       if (invoice.dueDate != null)
                         pw.Text(
-                          'Due by: \${invoice.dueDate!.toLocal().toString().split(\' \')[0]}',
+                          'Due by: ${invoice.dueDate!.toLocal().toString().split(' ')[0]}',
                           style: const pw.TextStyle(
                             fontSize: 11,
                             color: PdfColors.orange700,
@@ -583,7 +583,7 @@ class PdfService {
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Please include invoice #\${invoice.invoiceNumber} in the e-transfer message.',
+                          'Please include invoice #${invoice.invoiceNumber} in the e-transfer message.',
                           style: const pw.TextStyle(
                             fontSize: 9,
                             color: PdfColors.grey600,

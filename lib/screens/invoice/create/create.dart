@@ -19,6 +19,7 @@ import 'package:new_invoice_generator/screens/invoice/create/widgets/items_summa
 import 'package:new_invoice_generator/screens/invoice/create/widgets/payment_method.dart';
 import 'package:new_invoice_generator/screens/invoice/create/widgets/sender_section.dart';
 import 'package:new_invoice_generator/utils/number_format.dart';
+import 'package:new_invoice_generator/widgets/spell_check.dart';
 
 class CreateInvoiceScreen extends ConsumerStatefulWidget {
   /// Optional invoice to prefill — used for editing duplicates.
@@ -485,6 +486,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final notesSection = SectionCard(
       title: 'Notes & Custom Comments',
       child: TextField(
+        spellCheckConfiguration: freeTextSpellCheck,
+        contextMenuBuilder: spellCheckContextMenu,
         controller: _notesCtrl,
         maxLines: 3,
         decoration: const InputDecoration(

@@ -4,6 +4,7 @@ import 'package:new_invoice_generator/app_theme.dart';
 import 'package:new_invoice_generator/models/service.dart';
 import 'package:new_invoice_generator/providers/service.dart';
 import 'package:new_invoice_generator/screens/home/widgets/ui_kit.dart';
+import 'package:new_invoice_generator/widgets/spell_check.dart';
 
 class ServicesScreen extends ConsumerWidget {
   const ServicesScreen({super.key});
@@ -16,7 +17,7 @@ class ServicesScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Services')),
       body: servicesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: \$e')),
+        error: (e, _) => Center(child: Text('Error: $e')),
         data: (services) {
           final p = AppColors.of(context);
           if (services.isEmpty) {
@@ -199,6 +200,8 @@ class _ServiceDialogState extends ConsumerState<_ServiceDialog> {
             const SizedBox(height: 14),
             const _FieldLabel('Description (optional)'),
             TextField(
+              spellCheckConfiguration: freeTextSpellCheck,
+              contextMenuBuilder: spellCheckContextMenu,
               controller: _descCtrl,
               decoration: const InputDecoration(
                 hintText: 'Shown on the invoice',

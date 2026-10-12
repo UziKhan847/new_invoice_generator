@@ -699,7 +699,7 @@ class _PaymentMethodBox extends StatelessWidget {
                       color: Colors.green)),
               const SizedBox(height: 2),
               Text(
-                'Include invoice #\${invoice.invoiceNumber} in the message.',
+                'Include invoice #${invoice.invoiceNumber} in the message.',
                 style: TextStyle(
                     fontSize: 11, color: Colors.green.withAlpha(180)),
               ),

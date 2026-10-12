@@ -8,6 +8,7 @@ import 'package:new_invoice_generator/providers/customer.dart';
 import 'package:new_invoice_generator/providers/employee.dart';
 import 'package:new_invoice_generator/providers/recurring_invoice.dart';
 import 'package:new_invoice_generator/providers/service.dart';
+import 'package:new_invoice_generator/widgets/spell_check.dart';
 
 class RecurringInvoicesScreen extends ConsumerWidget {
   const RecurringInvoicesScreen({super.key});
@@ -268,6 +269,8 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
             ),
             const SizedBox(height: 12),
             TextField(
+              spellCheckConfiguration: freeTextSpellCheck,
+              contextMenuBuilder: spellCheckContextMenu,
               controller: _labelCtrl,
               decoration: const InputDecoration(labelText: 'Description'),
             ),
@@ -411,7 +414,7 @@ class _GenerateDialogState extends ConsumerState<_GenerateDialog> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
-                      ).showSnackBar(SnackBar(content: Text('Error: \$e')));
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   } finally {
                     if (mounted) setState(() => _loading = false);
